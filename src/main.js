@@ -10,13 +10,13 @@ const camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerH
 function setCameraFraming() {
   const narrowScreen = window.innerWidth < 700;
   camera.aspect = window.innerWidth / window.innerHeight;
-  camera.fov = narrowScreen ? 76 : 48;
-  camera.position.y = narrowScreen ? 7.2 : 5.7;
-  camera.position.z = narrowScreen ? 21.8 : 12.8;
+  camera.fov = narrowScreen ? 64 : 43;
+  camera.position.y = narrowScreen ? 5.8 : 5.5;
+  camera.position.z = narrowScreen ? 12.7 : 10.7;
   camera.updateProjectionMatrix();
 }
 setCameraFraming();
-camera.lookAt(0, 1.1, -9);
+camera.lookAt(0, 1, -0.5);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
@@ -408,34 +408,38 @@ function createRoundabout(z, osmCoordinate) {
     branch.position.set(side * 11.6, -0.035, 0);
     branch.receiveShadow = true;
     group.add(branch);
+    const straightArm = new THREE.Mesh(new THREE.BoxGeometry(5.4, 0.06, 18), branchMaterial);
+    straightArm.position.set(0, -0.035, side * 11.6);
+    straightArm.receiveShadow = true;
+    group.add(straightArm);
   }
   const ringMaterial = new THREE.MeshStandardMaterial({ color: '#464e49', roughness: 0.96, side: THREE.DoubleSide });
-  const ring = new THREE.Mesh(new THREE.RingGeometry(2.5, 6.6, 64), ringMaterial);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(2.0, 6.2, 64), ringMaterial);
   ring.rotation.x = -Math.PI / 2;
   ring.position.set(roundaboutX, -0.005, 0);
   ring.receiveShadow = true;
   group.add(ring);
-  const island = new THREE.Mesh(new THREE.CylinderGeometry(2.46, 2.7, 0.32, 40), new THREE.MeshStandardMaterial({ color: '#83aa65', roughness: 1 }));
-  island.position.set(roundaboutX, 0.1, 0);
+  const island = new THREE.Mesh(new THREE.CylinderGeometry(1.88, 2.02, 0.12, 40), new THREE.MeshStandardMaterial({ color: '#83aa65', roughness: 1 }));
+  island.position.set(roundaboutX, 0.01, 0);
   island.castShadow = true;
   island.receiveShadow = true;
   group.add(island);
-  const plinth = new THREE.Mesh(new THREE.CylinderGeometry(0.82, 1.08, 0.55, 8), new THREE.MeshStandardMaterial({ color: '#ead9ae', roughness: 0.82 }));
-  plinth.position.set(roundaboutX, 0.49, 0);
+  const plinth = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.68, 0.24, 8), new THREE.MeshStandardMaterial({ color: '#ead9ae', roughness: 0.82 }));
+  plinth.position.set(roundaboutX, 0.18, 0);
   group.add(plinth);
-  const marker = new THREE.Mesh(new THREE.ConeGeometry(0.58, 2.25, 5), new THREE.MeshStandardMaterial({ color: '#e6a94b', roughness: 0.7, flatShading: true }));
-  marker.position.set(roundaboutX, 1.87, 0);
+  const marker = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.84, 0.22), new THREE.MeshStandardMaterial({ color: '#e6a94b', roughness: 0.7, flatShading: true }));
+  marker.position.set(roundaboutX, 0.7, 0);
   marker.castShadow = true;
   group.add(marker);
   for (let i = 0; i < 6; i += 1) {
     const angle = i / 6 * Math.PI * 2;
-    const shrub = new THREE.Mesh(new THREE.DodecahedronGeometry(0.46, 0), new THREE.MeshStandardMaterial({ color: i % 2 ? '#4b8454' : '#629256', roughness: 1, flatShading: true }));
-    shrub.position.set(roundaboutX + Math.cos(angle) * 2.25, 0.55, Math.sin(angle) * 2.25);
+    const shrub = new THREE.Mesh(new THREE.DodecahedronGeometry(0.28, 0), new THREE.MeshStandardMaterial({ color: i % 2 ? '#4b8454' : '#629256', roughness: 1, flatShading: true }));
+    shrub.position.set(roundaboutX + Math.cos(angle) * 1.4, 0.34, Math.sin(angle) * 1.4);
     shrub.castShadow = true;
     group.add(shrub);
   }
   const lineMaterial = new THREE.MeshStandardMaterial({ color: '#f5e9cb', roughness: 0.9 });
-  const arc = new THREE.Mesh(new THREE.TorusGeometry(5.55, 0.07, 5, 72), lineMaterial);
+  const arc = new THREE.Mesh(new THREE.TorusGeometry(5.55, 0.055, 5, 72), lineMaterial);
   arc.rotation.x = Math.PI / 2;
   arc.position.y = 0.035;
   group.add(arc);
@@ -705,7 +709,7 @@ function spawnTraffic(z = -92) {
   vehicle.position.set(roadCurve(spawnZ) + lanes[lane], 0, spawnZ);
   vehicle.scale.setScalar(type === 'bus' ? 0.92 : type === 'bike' ? 1.06 : 0.98);
   scene.add(vehicle);
-  traffic.push({ mesh: vehicle, lane, type, hitDepth: type === 'bus' ? 2.25 : type === 'bike' ? 0.85 : 1.25, speed: 2 + random() * 2.4 });
+  traffic.push({ mesh: vehicle, lane, lanePosition: vehicle.position.x, type, hitDepth: type === 'bus' ? 2.25 : type === 'bike' ? 0.85 : 1.25, speed: 2 + random() * 2.4 });
 }
 spawnTraffic(-42);
 spawnTraffic(-78);
@@ -742,10 +746,10 @@ const ui = {
   passengerTitle: document.querySelector('#passenger-title'), passengerDetail: document.querySelector('#passenger-detail'), passengers: document.querySelector('#passenger-count'),
   toast: document.querySelector('#toast'), landmark: document.querySelector('#landmark-label'), crash: document.querySelector('#crash-screen'),
   crashMessage: document.querySelector('#crash-message'), finalScore: document.querySelector('#final-score'), loading: document.querySelector('#loading-screen'),
-  roundabout: document.querySelector('#roundabout-prompt'),
 };
 
 const streets = ['Abak Road', 'Ikot Ekpene Road', 'Aka Road', 'Wellington Bassey Way', 'Oron Road', 'Nwaniba Road'];
+const coinPointValue = 50;
 const crashMessages = [
   'Even the keke needs a breather.', 'My brother, the road no be yours alone!', 'This keke don collect.', 'Omo, that one pain small.',
   'Conductor! Make we try again.', 'No worry. Uyo traffic gets everybody.',
@@ -753,7 +757,7 @@ const crashMessages = [
 const state = {
   lane: 1, lanePosition: 0, speed: 48, score: 0, coins: 0, distance: 0, time: 0,
   active: true, braking: false, boosting: false, passengers: 0, dropDistance: null,
-  nextPickup: 1.5, streetIndex: 1, toastTimer: null, missionStage: 0, roadTime: 0, roundaboutAnnounced: false,
+  nextPickup: 1.5, streetIndex: 1, toastTimer: null, missionStage: 0, roadTime: 0,
 };
 let bestScore = Number(localStorage.getItem('kekenapepe-best') || 0);
 ui.best.textContent = String(bestScore).padStart(6, '0');
@@ -778,7 +782,6 @@ function changeLane(direction) {
 function endRun(reason = null) {
   if (!state.active) return;
   state.active = false;
-  ui.roundabout.hidden = true;
   if (soundEnabled) playCrash();
   const final = Math.floor(state.score);
   if (final > bestScore) {
@@ -787,7 +790,7 @@ function endRun(reason = null) {
   }
   ui.best.textContent = String(bestScore).padStart(6, '0');
   ui.crashMessage.textContent = reason || crashMessages[Math.floor(random() * crashMessages.length)];
-  ui.finalScore.textContent = `You made it ${Math.floor(state.distance)} m · ${final} points · ₦${state.coins * 50} collected`;
+  ui.finalScore.textContent = `You made it ${Math.floor(state.distance)} m · ${final} points · ${state.coins} coins · ₦${state.coins * coinPointValue} earned`;
   ui.crash.hidden = false;
 }
 
@@ -806,16 +809,16 @@ function resetRun() {
   state.streetIndex = 1;
   state.missionStage = 0;
   state.roadTime = 0;
-  state.roundaboutAnnounced = false;
   if (engineGain && soundEnabled) engineGain.gain.setTargetAtTime(0.035, audioContext.currentTime, 0.08);
   player.position.set(roadCurve(3.4), 0, 3.4);
   camera.position.x = 0;
-  camera.lookAt(0, 1.1, -9);
+  camera.lookAt(0, 1, -0.5);
   for (const item of traffic) {
     item.mesh.position.z = -42 - random() * 70;
     item.lane = Math.floor(random() * 3);
     item.collected = false;
-    item.mesh.position.x = roadCurve(item.mesh.position.z) + lanes[item.lane];
+    item.lanePosition = roadCurve(item.mesh.position.z) + lanes[item.lane];
+    item.mesh.position.x = item.lanePosition;
   }
   for (const landmark of cityLandmarks) {
     landmark.position.z = landmark.userData.startZ;
@@ -830,7 +833,6 @@ function resetRun() {
     item.mesh.visible = true;
   }
   ui.crash.hidden = true;
-  ui.roundabout.hidden = true;
   ui.street.textContent = streets[1];
   ui.mission.textContent = 'Reach Ibom Plaza';
   ui.progress.style.width = '0%';
@@ -950,7 +952,7 @@ function animate(now) {
     player.position.x = roadCurve(player.position.z) + state.lanePosition;
     const cameraX = THREE.MathUtils.damp(camera.position.x, player.position.x, 5, delta);
     camera.position.x = cameraX;
-    camera.lookAt(cameraX, 1.1, -9);
+    camera.lookAt(cameraX, 1, -0.5);
     player.position.y = Math.sin(state.time * 13) * 0.035;
     player.rotation.z = THREE.MathUtils.damp(player.rotation.z, (lanes[state.lane] - state.lanePosition) * -0.07, 9, delta);
     for (const wheel of player.userData.wheels) wheel.rotation.x += forward * 0.75;
@@ -959,6 +961,7 @@ function animate(now) {
       dash.position.z += forward;
       if (dash.position.z > 12) dash.position.z -= dashes.length / 2 * 7.2;
       dash.position.x = roadCurve(dash.position.z) + dash.userData.laneMarkX;
+      dash.visible = Math.abs(dash.position.z - roundaboutLandmark.position.z) > 8;
     }
     for (const object of scenery) {
       object.position.z += forward;
@@ -971,23 +974,25 @@ function animate(now) {
       landmark.position.x = roadCurve(landmark.position.z) + landmark.userData.roadsideX;
     }
     const roundaboutDistance = roundaboutLandmark.position.z - player.position.z;
-    if (roundaboutDistance > -12 && roundaboutDistance < 42) {
-      ui.roundabout.hidden = false;
-      if (!state.roundaboutAnnounced) {
-        state.roundaboutAnnounced = true;
-        showToast('Roundabout ahead. Swipe left for Aka Road or right for Oron Road.');
-      }
-    } else {
-      ui.roundabout.hidden = true;
-      if (roundaboutDistance < -18) state.roundaboutAnnounced = false;
-    }
     if (roundaboutDistance > -1.5 && roundaboutDistance < 1.5 && state.lane === 1) {
       endRun('You hit the roundabout island. Choose an outer lane next time.');
     }
 
     for (const item of traffic) {
       item.mesh.position.z += (forward - item.speed * delta);
-      item.mesh.position.x = roadCurve(item.mesh.position.z) + lanes[item.lane];
+      const distanceToIsland = item.mesh.position.z - roundaboutLandmark.position.z;
+      if (Math.abs(distanceToIsland) < 20 && item.lane === 1) {
+        item.lane = item.mesh.position.x < roundaboutLandmark.position.x ? 0 : 2;
+      }
+      const trafficTargetX = roadCurve(item.mesh.position.z) + lanes[item.lane];
+      item.lanePosition = THREE.MathUtils.damp(item.lanePosition, trafficTargetX, 6, delta);
+      item.mesh.position.x = item.lanePosition;
+      const islandClearance = 1.88 + (item.type === 'bus' ? 1.0 : 0.72);
+      if (Math.abs(distanceToIsland) < item.hitDepth + 1.2 && Math.abs(item.mesh.position.x - roundaboutLandmark.position.x) < islandClearance) {
+        item.lane = item.mesh.position.x < roundaboutLandmark.position.x ? 0 : 2;
+        item.lanePosition = roadCurve(item.mesh.position.z) + lanes[item.lane];
+        item.mesh.position.x = item.lanePosition;
+      }
       for (const wheel of item.mesh.userData.wheels) wheel.rotation.x += (forward - item.speed * delta) * 0.75;
       if (item.mesh.position.z > player.position.z - item.hitDepth && item.mesh.position.z < player.position.z + item.hitDepth && Math.abs(item.mesh.position.x - player.position.x) < 1.18) {
         endRun();
@@ -996,7 +1001,8 @@ function animate(now) {
       if (item.mesh.position.z > 16) {
         item.lane = Math.floor(random() * 3);
         item.mesh.position.z = -95 - random() * 38;
-        item.mesh.position.x = roadCurve(item.mesh.position.z) + lanes[item.lane];
+        item.lanePosition = roadCurve(item.mesh.position.z) + lanes[item.lane];
+        item.mesh.position.x = item.lanePosition;
         item.speed = 2 + random() * 2.4;
       }
     }
@@ -1028,9 +1034,9 @@ function animate(now) {
         item.mesh.visible = false;
         if (item.kind === 'coin') {
           state.coins += 1;
-          state.score += 25;
+          state.score += coinPointValue;
           if (soundEnabled) playChime();
-          showToast('Abeg collect! +25 points');
+          showToast(`Coin collected! +${coinPointValue} points · ₦${coinPointValue}`);
         } else if (state.passengers === 0) {
           state.passengers = 1;
           state.dropDistance = state.distance + 160;

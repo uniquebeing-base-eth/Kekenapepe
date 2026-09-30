@@ -71,23 +71,13 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .landmark-label span { width: 1px; height: 24px; background: #28533d; }
 .landmark-label strong { padding: 6px 9px 4px; background: var(--lime); color: #284333; font: 800 14px 'Barlow Condensed',sans-serif; letter-spacing: .5px; }
 .landmark-label small { color: white; font-size: 8px; font-weight: 800; letter-spacing: 1px; text-shadow: 0 1px 5px #1b3828; }
-.toast { position: absolute; z-index: 2; left: 50%; top: 23%; padding: 10px 16px; background: #203f30; color: white; font: 700 15px 'Barlow Condensed',sans-serif; opacity: 0; transform: translate(-50%,-6px); transition: .2s; pointer-events: none; white-space: nowrap; }
-.roundabout-prompt { position: absolute; z-index: 3; top: 31%; left: 50%; width: min(352px,calc(100% - 34px)); display: grid; gap: 7px; padding: 12px 15px; border-left: 3px solid var(--lime); background: rgba(25,53,39,.93); color: #f3f3da; box-shadow: 0 8px 28px rgba(22,45,32,.22); transform: translateX(-50%); }
-.roundabout-prompt[hidden] { display: none; }
-.roundabout-kicker { color: var(--lime); font-size: 8px; font-weight: 800; }
-.roundabout-prompt > strong { font: 700 21px/1 'Barlow Condensed',sans-serif; }
-.roundabout-exits { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.roundabout-exits span { display: grid; gap: 2px; }
-.roundabout-exits b { color: white; font-size: 8px; }
-.roundabout-exits small,.roundabout-note { color: #c5d4c7; font-size: 9px; }
-.roundabout-exits i { color: var(--lime); font-size: 19px; font-style: normal; }
-.roundabout-note { padding-top: 4px; border-top: 1px solid rgba(236,244,221,.18); }
+.toast { position: absolute; z-index: 2; left: 50%; top: 23%; max-width: calc(100% - 32px); padding: 10px 16px; background: #203f30; color: white; font: 700 15px 'Barlow Condensed',sans-serif; opacity: 0; transform: translate(-50%,-6px); transition: .2s; pointer-events: none; text-align: center; white-space: normal; }
 .toast.show { opacity: 1; transform: translate(-50%,0); }
 
-.controls { position: absolute; z-index: 2; left: 5.2%; right: 5.2%; bottom: 29px; display: flex; align-items: flex-end; justify-content: space-between; }
-.control-hint { display: flex; align-items: center; gap: 5px; padding-bottom: 8px; color: #445d4d; }
-.swipe-icon { width: 29px; height: 29px; display: grid; place-items: center; border: 1px solid rgba(37,71,48,.23); border-radius: 50%; background: rgba(249,255,247,.56); font: 700 21px 'DM Sans',sans-serif; }
-.control-hint small { margin-left: 4px; font-size: 8px; font-weight: 800; letter-spacing: 1px; }
+.controls { position: absolute; z-index: 2; left: 5.2%; right: 5.2%; bottom: 29px; display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: end; column-gap: 16px; }
+.control-guide { display: grid; grid-template-columns: repeat(3,max-content); gap: 5px 14px; padding-bottom: 8px; color: #445d4d; font-size: 8px; }
+.control-guide span { display: flex; flex-direction: column; gap: 3px; }
+.control-guide b { color: #243f30; font-size: 8px; }
 .osm-credit { position: absolute; left: 0; bottom: -17px; color: rgba(44,73,55,.72); font-size: 7px; font-weight: 700; text-decoration: none; }
 .osm-credit:hover { color: #1e7552; text-decoration: underline; }
 .pedal-controls { display: flex; gap: 9px; }
@@ -137,18 +127,14 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .ride-status strong { font-size: 13px; }
   .ride-icon { width: 23px; height: 23px; }
   .controls { left: 17px; right: 17px; bottom: max(17px,env(safe-area-inset-bottom)); }
-  .control-hint { gap: 3px; }
+  .control-guide { grid-template-columns: 1fr; gap: 3px; padding-bottom: 0; font-size: 7px; }
+  .control-guide span { flex-direction: row; flex-wrap: wrap; gap: 2px 4px; }
+  .control-guide b { font-size: 7px; }
   .osm-credit { bottom: -13px; font-size: 6px; }
-  .swipe-icon { width: 24px; height: 24px; font-size: 17px; }
-  .control-hint small { font-size: 7px; letter-spacing: .6px; }
   .pedal-controls { gap: 6px; }
   .pedal-button { min-width: 72px; height: 42px; gap: 4px; font-size: 8px; }
   .pedal-icon { font-size: 14px; }
   .landmark-label { top: 38%; }
-  .roundabout-prompt { top: 32%; padding: 10px 12px; }
-  .roundabout-prompt > strong { font-size: 19px; }
-  .roundabout-exits b { font-size: 7px; }
-  .roundabout-exits small,.roundabout-note { font-size: 8px; }
 }
 
 @media (max-height: 600px) and (min-width: 701px) {
