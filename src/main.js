@@ -182,6 +182,93 @@ function createKeke(primary = false) {
   return group;
 }
 
+function createBike() {
+  const group = new THREE.Group();
+  const frame = new THREE.MeshStandardMaterial({ color: '#34413b', roughness: 0.8, flatShading: true });
+  const paint = new THREE.MeshStandardMaterial({ color: '#e1a62f', roughness: 0.72, flatShading: true });
+  const rider = new THREE.MeshStandardMaterial({ color: '#43805d', roughness: 0.9, flatShading: true });
+  const helmet = new THREE.MeshStandardMaterial({ color: '#e96d46', roughness: 0.65, flatShading: true });
+  const wheels = [];
+
+  for (const z of [-0.72, 0.68]) {
+    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.29, 0.29, 0.14, 10), frame);
+    wheel.rotation.z = Math.PI / 2;
+    wheel.position.set(0, 0.31, z);
+    wheel.castShadow = true;
+    group.add(wheel);
+    wheels.push(wheel);
+  }
+
+  const addBar = (start, end, width, material) => {
+    const from = new THREE.Vector3(...start);
+    const to = new THREE.Vector3(...end);
+    const direction = to.clone().sub(from);
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(width, direction.length(), width), material);
+    bar.position.copy(from.add(to).multiplyScalar(0.5));
+    bar.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
+    bar.castShadow = true;
+    group.add(bar);
+  };
+  addBar([0, 0.32, 0.68], [0, 0.87, 0.3], 0.09, paint);
+  addBar([0, 0.87, 0.3], [0, 0.36, -0.72], 0.08, paint);
+  addBar([0, 0.32, 0.68], [0, 0.36, -0.72], 0.075, frame);
+  addBar([0, 0.9, 0.28], [0, 1.18, -0.55], 0.065, frame);
+  makeBox(group, 0.3, 0.1, 0.42, frame, [0, 0.92, 0.33]);
+  makeBox(group, 0.42, 0.56, 0.28, rider, [0, 1.2, -0.02]);
+  makeBox(group, 0.48, 0.12, 0.09, frame, [0, 1.2, -0.58]);
+  for (const side of [-1, 1]) {
+    addBar([side * 0.16, 1.35, -0.06], [side * 0.25, 1.18, -0.52], 0.07, rider);
+    addBar([side * 0.12, 0.96, 0.04], [side * 0.18, 0.48, -0.34], 0.09, frame);
+  }
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), helmet);
+  head.position.set(0, 1.65, -0.12);
+  head.castShadow = true;
+  group.add(head);
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), new THREE.MeshStandardMaterial({ color: '#fff0b0', emissive: '#725224', emissiveIntensity: 0.35 }));
+  lamp.position.set(0, 0.76, -0.77);
+  group.add(lamp);
+  group.userData.wheels = wheels;
+  return group;
+}
+
+function createBus() {
+  const group = new THREE.Group();
+  const paint = new THREE.MeshStandardMaterial({ color: '#e4aa3d', roughness: 0.7, flatShading: true });
+  const trim = new THREE.MeshStandardMaterial({ color: '#f5e4c0', roughness: 0.8 });
+  const glass = new THREE.MeshStandardMaterial({ color: '#83b8a3', roughness: 0.36, metalness: 0.08 });
+  const dark = new THREE.MeshStandardMaterial({ color: '#34413b', roughness: 0.85, flatShading: true });
+  const wheels = [];
+
+  makeBox(group, 1.9, 1.72, 4.1, paint, [0, 1.25, 0]);
+  makeBox(group, 1.95, 0.16, 4.16, trim, [0, 2.13, 0]);
+  makeBox(group, 1.58, 0.66, 0.06, glass, [0, 1.78, 2.08], false);
+  makeBox(group, 1.52, 0.64, 0.06, glass, [0, 1.78, -2.08], false);
+  makeBox(group, 1.12, 0.11, 0.07, dark, [0, 0.82, 2.11], false);
+  for (const x of [-0.96, 0.96]) {
+    for (const z of [-0.98, 0.18, 1.33]) {
+      makeBox(group, 0.055, 0.58, 0.76, glass, [x, 1.73, z], false);
+    }
+    for (const z of [-1.2, 1.2]) {
+      const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.37, 0.37, 0.2, 10), dark);
+      wheel.rotation.z = Math.PI / 2;
+      wheel.position.set(x * 0.98, 0.38, z);
+      wheel.castShadow = true;
+      group.add(wheel);
+      wheels.push(wheel);
+    }
+    makeBox(group, 0.15, 0.24, 0.12, new THREE.MeshStandardMaterial({ color: '#dc6448' }), [x * 0.82, 0.93, 2.1], false);
+    makeBox(group, 0.15, 0.2, 0.12, new THREE.MeshStandardMaterial({ color: '#fff0b0' }), [x * 0.82, 1.07, -2.1], false);
+  }
+  group.userData.wheels = wheels;
+  return group;
+}
+
+function createTrafficVehicle(type) {
+  if (type === 'bike') return createBike();
+  if (type === 'bus') return createBus();
+  return createKeke(false);
+}
+
 const player = createKeke(true);
 player.position.set(0, 0, 3.4);
 player.scale.setScalar(1.08);
@@ -189,12 +276,13 @@ scene.add(player);
 
 const traffic = [];
 function spawnTraffic(z = -92) {
-  const vehicle = createKeke(false);
+  const type = ['keke', 'bike', 'bus'][traffic.length % 3];
+  const vehicle = createTrafficVehicle(type);
   const lane = Math.floor(random() * lanes.length);
   vehicle.position.set(lanes[lane], 0, z - random() * 22);
-  vehicle.scale.setScalar(0.94 + random() * 0.08);
+  vehicle.scale.setScalar(type === 'bus' ? 0.92 : type === 'bike' ? 1.06 : 0.98);
   scene.add(vehicle);
-  traffic.push({ mesh: vehicle, lane, speed: 2 + random() * 2.4, collected: false });
+  traffic.push({ mesh: vehicle, lane, type, hitDepth: type === 'bus' ? 2.25 : type === 'bike' ? 0.85 : 1.25, speed: 2 + random() * 2.4 });
 }
 spawnTraffic(-42);
 spawnTraffic(-78);
@@ -288,6 +376,8 @@ function resetRun() {
   state.missionStage = 0;
   state.roadTime = 0;
   player.position.set(0, 0, 3.4);
+  camera.position.x = 0;
+  camera.lookAt(0, 1.1, -9);
   for (const item of traffic) {
     item.mesh.position.z = -42 - random() * 70;
     item.lane = Math.floor(random() * 3);
@@ -330,11 +420,24 @@ function bindHold(button, key) {
   button.addEventListener('pointerleave', stop);
 }
 
-document.querySelector('#steer-left').addEventListener('pointerdown', (event) => { event.preventDefault(); changeLane(-1); });
-document.querySelector('#steer-right').addEventListener('pointerdown', (event) => { event.preventDefault(); changeLane(1); });
 bindHold(document.querySelector('#brake'), 'braking');
 bindHold(document.querySelector('#faster'), 'boosting');
 document.querySelector('#restart-button').addEventListener('click', resetRun);
+
+let swipeStart = null;
+gameElement.addEventListener('pointerdown', (event) => {
+  if (!state.active || event.target.closest('button, a') || (event.pointerType === 'mouse' && event.button !== 0)) return;
+  swipeStart = { x: event.clientX, y: event.clientY };
+  gameElement.setPointerCapture(event.pointerId);
+});
+gameElement.addEventListener('pointerup', (event) => {
+  if (!swipeStart) return;
+  const deltaX = event.clientX - swipeStart.x;
+  const deltaY = event.clientY - swipeStart.y;
+  if (Math.abs(deltaX) > 36 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) changeLane(Math.sign(deltaX));
+  swipeStart = null;
+});
+gameElement.addEventListener('pointercancel', () => { swipeStart = null; });
 
 let soundEnabled = false;
 let audioContext = null;
@@ -384,6 +487,9 @@ function animate(now) {
     state.score += forward * 1.35;
     state.lanePosition = THREE.MathUtils.damp(state.lanePosition, lanes[state.lane], 10, delta);
     player.position.x = state.lanePosition;
+    const cameraX = THREE.MathUtils.damp(camera.position.x, state.lanePosition, 5, delta);
+    camera.position.x = cameraX;
+    camera.lookAt(cameraX, 1.1, -9);
     player.position.y = Math.sin(state.time * 13) * 0.035;
     player.rotation.z = THREE.MathUtils.damp(player.rotation.z, (lanes[state.lane] - state.lanePosition) * -0.07, 9, delta);
     for (const wheel of player.userData.wheels) wheel.rotation.x += forward * 0.75;
@@ -400,7 +506,7 @@ function animate(now) {
     for (const item of traffic) {
       item.mesh.position.z += (forward - item.speed * delta);
       for (const wheel of item.mesh.userData.wheels) wheel.rotation.x += (forward - item.speed * delta) * 0.75;
-      if (item.mesh.position.z > player.position.z - 1.1 && item.mesh.position.z < player.position.z + 1.25 && Math.abs(item.mesh.position.x - player.position.x) < 1.18) {
+      if (item.mesh.position.z > player.position.z - item.hitDepth && item.mesh.position.z < player.position.z + item.hitDepth && Math.abs(item.mesh.position.x - player.position.x) < 1.18) {
         endRun();
         break;
       }

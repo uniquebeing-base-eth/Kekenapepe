@@ -17,7 +17,7 @@ body { margin: 0; min-width: 320px; overflow: hidden; }
 
 button, a { -webkit-tap-highlight-color: transparent; }
 
-#game { position: relative; width: 100vw; height: 100dvh; min-height: 520px; overflow: hidden; isolation: isolate; background: #b8e8c9; }
+#game { position: relative; width: 100vw; height: 100dvh; min-height: 520px; overflow: hidden; isolation: isolate; background: #b8e8c9; touch-action: none; user-select: none; }
 #game canvas { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; display: block; }
 .world-wash { position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(180deg,rgba(245,255,240,.48),transparent 25%,transparent 70%,rgba(20,49,39,.16)); }
 
@@ -76,13 +76,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 .controls { position: absolute; z-index: 2; left: 5.2%; right: 5.2%; bottom: 29px; display: flex; align-items: flex-end; justify-content: space-between; }
 .control-hint { display: flex; align-items: center; gap: 5px; padding-bottom: 8px; color: #445d4d; }
-.keyboard-key { width: 24px; height: 24px; display: grid; place-items: center; border: 1px solid rgba(37,71,48,.23); border-radius: 4px; background: rgba(249,255,247,.56); font: 700 16px 'DM Sans',sans-serif; }
+.swipe-icon { width: 29px; height: 29px; display: grid; place-items: center; border: 1px solid rgba(37,71,48,.23); border-radius: 50%; background: rgba(249,255,247,.56); font: 700 21px 'DM Sans',sans-serif; }
 .control-hint small { margin-left: 4px; font-size: 8px; font-weight: 800; letter-spacing: 1px; }
-.steering-controls,.pedal-controls { display: flex; gap: 9px; }
-.steering-controls { position: absolute; left: 50%; transform: translateX(-50%); }
+.pedal-controls { display: flex; gap: 9px; }
 .control-button { border: 1px solid rgba(37,71,48,.17); color: #244636; background: rgba(249,255,247,.78); box-shadow: 0 5px 17px rgba(30,61,44,.11); cursor: pointer; touch-action: none; transition: transform .12s,background .12s; }
 .control-button:active,.control-button.pressed { transform: translateY(2px); background: var(--lime); }
-.steer-button { width: 51px; height: 51px; border-radius: 50%; font-size: 24px; }
 .pedal-button { height: 43px; min-width: 96px; display: flex; align-items: center; justify-content: center; gap: 7px; border-radius: 4px; font-size: 9px; font-weight: 800; letter-spacing: .7px; }
 .pedal-icon { font-size: 16px; }
 .brake-button { color: #9c4939; }
@@ -123,9 +121,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .ride-status strong { font-size: 13px; }
   .ride-icon { width: 23px; height: 23px; }
   .controls { left: 17px; right: 17px; bottom: max(17px,env(safe-area-inset-bottom)); }
-  .control-hint { display: none; }
-  .steering-controls { left: 0; transform: none; gap: 7px; }
-  .steer-button { width: 49px; height: 49px; }
+  .control-hint { gap: 3px; }
+  .swipe-icon { width: 24px; height: 24px; font-size: 17px; }
+  .control-hint small { font-size: 7px; letter-spacing: .6px; }
   .pedal-controls { gap: 6px; }
   .pedal-button { min-width: 72px; height: 42px; gap: 4px; font-size: 8px; }
   .pedal-icon { font-size: 14px; }
