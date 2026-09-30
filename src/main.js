@@ -1,3 +1,7 @@
+const coinPointValue = 50;
+const fuelPricePerLiter = 1000;
+const fuelTankCapacity = 20;
+
 import * as THREE from 'three';
 import './style.css';
 
@@ -46,10 +50,62 @@ const colors = {
   roof: '#bd6650', wall: '#f2d7a1', mint: '#c5e4c9', cream: '#f4e8c9',
 };
 const mats = Object.fromEntries(Object.entries(colors).map(([key, color]) => [key, new THREE.MeshStandardMaterial({ color, roughness: 0.92 })]));
-function roadCurve(z) {
-  const firstBend = (z + 206) / 56;
-  const secondBend = (z + 382) / 48;
-  return 3.1 * Math.exp(-firstBend * firstBend) - 2.6 * Math.exp(-secondBend * secondBend);
+const routeProfiles = [
+  { name: 'Ikot Ekpene Road', laneBias: 0, curveWidth: 8, atmosphere: 'city centre traffic', path: [[5.04523, 7.89787], [5.04358, 7.90256], [5.0418, 7.90769], [5.03956, 7.91409], [5.03761, 7.91964], [5.03641, 7.92314]] },
+  { name: 'Aka Road', laneBias: -0.12, curveWidth: 5.5, atmosphere: 'busy shops and junctions', path: [[5.03347, 7.92764], [5.03317, 7.92861], [5.03218, 7.92712], [5.03059, 7.9264], [5.02674, 7.92489], [5.02466, 7.92405], [5.02108, 7.92261]] },
+  { name: 'Abak Road', laneBias: 0.15, curveWidth: 9, atmosphere: 'western Uyo route', path: [[5.03439, 7.92698], [5.03204, 7.92007], [5.03002, 7.91488], [5.02815, 7.91004], [5.02691, 7.90754]] },
+  { name: 'Oron Road', laneBias: -0.18, curveWidth: 7, atmosphere: 'Nwaniba connection', path: [[5.03454, 7.92816], [5.03368, 7.92957], [5.03226, 7.93173], [5.03092, 7.93358], [5.0304, 7.93397], [5.02798, 7.93471], [5.02295, 7.93648]] },
+  { name: 'Nwaniba Road', laneBias: 0.2, curveWidth: 8, atmosphere: 'roundabout route', path: [[5.03279, 7.93103], [5.03065, 7.934], [5.02949, 7.93904], [5.02868, 7.94123], [5.02775, 7.94332], [5.02701, 7.94638]] },
+  { name: 'Wellington Bassey Way', laneBias: -0.08, curveWidth: 4.5, atmosphere: 'Barracks Road', path: [[5.03518, 7.92871], [5.03586, 7.92967], [5.0364, 7.93043], [5.03762, 7.93211], [5.03792, 7.93253], [5.03847, 7.93329]] },
+  { name: 'Ibom Plaza Loop', laneBias: 0, curveWidth: 5, atmosphere: 'landmark circuit', path: [[5.03633, 7.92362], [5.03472, 7.92809], [5.03279, 7.93103], [5.03069, 7.93388], [5.02998, 7.93692], [5.03279, 7.93103]] },
+  { name: 'UniUyo Road', laneBias: 0.1, curveWidth: 8.5, atmosphere: 'University district', path: [[5.037, 7.92363], [5.0448, 7.92242], [5.04734, 7.92509], [5.05253, 7.9272], [5.05726, 7.92919]] },
+];
+const routeStreetLists = [
+  ['Ikot Ekpene Road', 'Atiku Abubakar Avenue', 'Aka Road', 'Wellington Bassey Way'],
+  ['Aka Road', 'Abak Road', 'Nelson Mandela Road', 'Ikot Ekpene Road'],
+  ['Abak Road', 'Atiku Abubakar Avenue', 'Ikot Ekpene Road', 'Aka Road'],
+  ['Oron Road', 'Nwaniba Road', 'Wellington Bassey Way', 'Abak Road'],
+  ['Nwaniba Road', 'Oron Road', 'Ikot Ekpene Road', 'Aka Road'],
+  ['Wellington Bassey Way', 'Atiku Abubakar Avenue', 'Ikot Ekpene Road', 'Aka Road'],
+  ['Ibom Plaza Loop', 'Aka Road', 'Oron Road', 'Nwaniba Road'],
+  ['UniUyo Road', 'Ikpa Road', 'Itam Road', 'Ikot Ekpene Road'],
+];
+
+for (const profile of routeProfiles) {
+  const latOrigin = profile.path.reduce((sum, point) => sum + point[0], 0) / profile.path.length;
+  const lonOrigin = profile.path.reduce((sum, point) => sum + point[1], 0) / profile.path.length;
+  const projected = profile.path.map(([lat, lon]) => ({
+    x: (lon - lonOrigin) * 111320 * Math.cos(latOrigin * Math.PI / 180),
+    z: (lat - latOrigin) * 111320,
+  }));
+  const minX = Math.min(...projected.map((point) => point.x));
+  const maxX = Math.max(...projected.map((point) => point.x));
+  profile.samples = projected.map((point) => ({
+    x: maxX === minX ? 0 : ((point.x - minX) / (maxX - minX) - 0.5) * profile.curveWidth,
+    distance: 0,
+  }));
+  for (let index = 1; index < projected.length; index += 1) {
+    const dx = projected[index].x - projected[index - 1].x;
+    const dz = projected[index].z - projected[index - 1].z;
+    profile.samples[index].distance = profile.samples[index - 1].distance + Math.hypot(dx, dz);
+  }
+}
+
+function activeRoute() {
+  return routeProfiles[selectedRoad] || routeProfiles[0];
+}
+
+function routeCurve(z) {
+  const profile = activeRoute();
+  const total = profile.samples[profile.samples.length - 1].distance || 1;
+  const progress = THREE.MathUtils.clamp((560 - z) / routeLength, 0, 1);
+  const target = progress * total;
+  let index = 1;
+  while (index < profile.samples.length - 1 && profile.samples[index].distance < target) index += 1;
+  const start = profile.samples[index - 1];
+  const end = profile.samples[index];
+  const span = end.distance - start.distance || 1;
+  return THREE.MathUtils.lerp(start.x, end.x, (target - start.distance) / span);
 }
 
 const routeStart = -540;
@@ -59,9 +115,11 @@ const roadMaterial = new THREE.MeshStandardMaterial({ color: colors.road, roughn
 const roadGeometry = new THREE.PlaneGeometry(11.4, routeLength, 1, 260);
 roadGeometry.rotateX(-Math.PI / 2);
 const roadPositions = roadGeometry.attributes.position;
+const roadBaseOffsets = new Float32Array(roadPositions.count);
 for (let i = 0; i < roadPositions.count; i += 1) {
   const worldZ = routeStart + roadPositions.getZ(i);
-  roadPositions.setX(i, roadCurve(worldZ) + roadPositions.getX(i));
+  roadBaseOffsets[i] = roadPositions.getX(i);
+  roadPositions.setX(i, routeCurve(worldZ) + roadBaseOffsets[i]);
 }
 roadGeometry.computeVertexNormals();
 const road = new THREE.Mesh(roadGeometry, roadMaterial);
@@ -83,23 +141,27 @@ for (const x of [-laneWidth / 2, laneWidth / 2]) {
   for (let i = 0; i < 75; i += 1) {
     const dash = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.018, 2.1), dashMaterial);
     dash.userData.laneMarkX = x;
-    dash.position.set(roadCurve(9 - i * 7.2) + x, -0.015, 9 - i * 7.2);
+    dash.position.set(routeCurve(9 - i * 7.2) + x, -0.015, 9 - i * 7.2);
     scene.add(dash);
     dashes.push(dash);
   }
 }
+const roadEdges = [];
 for (const x of [-5.58, 5.58]) {
   const edgeGeometry = new THREE.PlaneGeometry(0.11, routeLength, 1, 260);
   edgeGeometry.rotateX(-Math.PI / 2);
   const edgePositions = edgeGeometry.attributes.position;
+  const baseOffsets = new Float32Array(edgePositions.count);
   for (let i = 0; i < edgePositions.count; i += 1) {
     const worldZ = routeStart + edgePositions.getZ(i);
-    edgePositions.setX(i, roadCurve(worldZ) + x + edgePositions.getX(i));
+    baseOffsets[i] = x + edgePositions.getX(i);
+    edgePositions.setX(i, routeCurve(worldZ) + baseOffsets[i]);
   }
   edgeGeometry.computeVertexNormals();
   const edge = new THREE.Mesh(edgeGeometry, new THREE.MeshStandardMaterial({ color: '#f2ead0' }));
   edge.position.set(0, -0.01, routeStart);
   scene.add(edge);
+  roadEdges.push({ geometry: edgeGeometry, baseOffsets });
 }
 
 const random = (() => {
@@ -189,7 +251,7 @@ const policeCheckpoints = [];
 const fuelStations = [];
 
 function addCityLandmark(group, x, z, osmCoordinate = null) {
-  group.position.set(x + roadCurve(z), 0, z);
+  group.position.set(x + routeCurve(z), 0, z);
   group.userData.roadsideX = x;
   group.userData.startX = group.position.x;
   group.userData.startZ = z;
@@ -199,27 +261,8 @@ function addCityLandmark(group, x, z, osmCoordinate = null) {
   return group;
 }
 
-const routeProfiles = [
-  { name: 'Ikot Ekpene Road', laneBias: 0, bend: 1, atmosphere: 'city centre traffic' },
-  { name: 'Aka Road', laneBias: -0.12, bend: 0.7, atmosphere: 'busy shops and junctions' },
-  { name: 'Abak Road', laneBias: 0.15, bend: 1.25, atmosphere: 'western Uyo route' },
-  { name: 'Oron Road', laneBias: -0.18, bend: 1.1, atmosphere: 'Nwaniba connection' },
-  { name: 'Nwaniba Road', laneBias: 0.2, bend: 0.85, atmosphere: 'roundabout route' },
-  { name: 'Wellington Bassey Way', laneBias: -0.08, bend: 0.65, atmosphere: 'Barracks Road' },
-  { name: 'Ibom Plaza Loop', laneBias: 0, bend: 0.45, atmosphere: 'landmark circuit' },
-  { name: 'UniUyo Road', laneBias: 0.1, bend: 0.9, atmosphere: 'University district' },
-];
-
-function activeRoute() {
-  return routeProfiles[selectedRoad] || routeProfiles[0];
-}
-
 function routeLaneX(lane) {
   return lanes[lane] + activeRoute().laneBias;
-}
-
-function routeCurve(z) {
-  return roadCurve(z) * activeRoute().bend;
 }
 
 function createSignMaterial(title, subtitle, background = '#1d6547') {
@@ -391,12 +434,12 @@ function createPoliceCheckpoint(z) {
   group.add(sign);
   createPerson(group, 5.5, 2.3, '#344766', '#283449', 'police');
   createPerson(group, 7.3, 2.55, '#344766', '#283449', 'police');
-  makeBox(group, 0.18, 0.2, 4.1, blue, [5.3, 1.18, 4.2]);
+  const blockade = [makeBox(group, 0.18, 0.2, 4.1, blue, [5.3, 1.18, 4.2])];
   for (let segment = 0; segment < 4; segment += 1) {
-    makeBox(group, 1.02, 0.36, 0.24, segment % 2 ? white : red, [-4.59 + segment * 1.02, 1.35, 4.2]);
-    makeBox(group, 1.02, 0.36, 0.24, segment % 2 ? red : white, [1.53 + segment * 1.02, 1.35, 4.2]);
+    blockade.push(makeBox(group, 1.02, 0.36, 0.24, segment % 2 ? white : red, [-4.59 + segment * 1.02, 1.35, 4.2]));
+    blockade.push(makeBox(group, 1.02, 0.36, 0.24, segment % 2 ? red : white, [1.53 + segment * 1.02, 1.35, 4.2]));
   }
-  for (const coneX of [-2.2, -0.3, 1.6, 3.5]) {
+  for (const coneX of [-5.3, -4.7, 4.7, 5.3]) {
     const cone = new THREE.Mesh(new THREE.ConeGeometry(0.38, 0.95, 6), new THREE.MeshStandardMaterial({ color: '#ec764b', roughness: 0.82 }));
     cone.position.set(coneX, 0.48, 4.8);
     group.add(cone);
@@ -404,11 +447,12 @@ function createPoliceCheckpoint(z) {
   const checkpoint = addCityLandmark(group, 0, z, [5.02309, 7.90377]);
   checkpoint.userData.barrierOffset = 4.2;
   checkpoint.userData.cleared = false;
+  checkpoint.userData.blockade = blockade;
   policeCheckpoints.push(checkpoint);
   return checkpoint;
 }
 
-function createFuelStation(z, x = 12) {
+function createFuelStation(z, x = 7.2) {
   const group = new THREE.Group();
   const canopy = new THREE.MeshStandardMaterial({ color: '#e7d8b3', roughness: 0.86 });
   const green = new THREE.MeshStandardMaterial({ color: '#277b57', roughness: 0.76 });
@@ -426,6 +470,52 @@ function createFuelStation(z, x = 12) {
   station.userData.fuelStation = true;
   fuelStations.push(station);
   return station;
+}
+
+const busStops = [];
+const routeStopNames = [
+  ['Itam Junction', 'Ibom Plaza', 'Nwaniba Roundabout', 'UniUyo Main Gate'],
+  ['Aka Junction', 'Afia Etoi', 'Ibom Plaza', 'Itam Junction'],
+  ['Abak Road', 'Ukana', 'Atiku Avenue', 'Ibom Plaza'],
+  ['Oron Road', 'Udo Udoma', 'Nwaniba Roundabout', 'Ibom Plaza'],
+  ['Nwaniba Road', 'Nwaniba Roundabout', 'Oron Junction', 'Ibom Plaza'],
+  ['Barracks Road', 'Wellington Bassey Way', 'Ibom Plaza', 'UniUyo Main Gate'],
+  ['Ibom Plaza', 'Atiku Avenue', 'Aka Junction', 'Nwaniba Roundabout'],
+  ['UniUyo Main Gate', 'Ikpa Road', 'Itam Junction', 'Ibom Plaza'],
+];
+
+function createBusStop(z, index) {
+  const group = new THREE.Group();
+  const concrete = new THREE.MeshStandardMaterial({ color: '#d6c398', roughness: 0.94 });
+  const yellow = new THREE.MeshStandardMaterial({ color: '#e8c63f', roughness: 0.86 });
+  const green = new THREE.MeshStandardMaterial({ color: '#397654', roughness: 0.84 });
+  const bay = makeBox(group, 3.2, 0.04, 5, yellow, [lanes[2], -0.025, 0], false);
+  bay.receiveShadow = true;
+  for (const stripeZ of [-1.7, -0.8, 0.1, 1.0, 1.9]) makeBox(group, 3.1, 0.018, 0.12, concrete, [lanes[2], 0.003, stripeZ], false);
+  for (const postX of [6.4, 9.6]) makeBox(group, 0.18, 2.8, 0.18, green, [postX, 1.4, -0.3]);
+  makeBox(group, 3.6, 0.2, 2.8, concrete, [8, 2.85, -0.3]);
+  makeBox(group, 3.3, 0.7, 0.14, green, [8, 2.2, 1.1]);
+  const stopSign = new THREE.Mesh(new THREE.PlaneGeometry(3.1, 0.56), createSignMaterial('KEKE STOP', 'BRAKE TO PICK UP', '#397654'));
+  stopSign.position.set(8, 2.2, 1.18);
+  group.add(stopSign);
+  const people = [
+    createPerson(group, lanes[2] + 1.3, 2.2, '#d98642', '#37483d'),
+    createPerson(group, lanes[2] + 2.05, 2.8, '#397b76', '#3a4739'),
+  ];
+  for (const person of people) person.userData.homePosition = person.position.clone();
+  const exitWalkers = [
+    createPerson(group, lanes[2] - 0.1, -1.4, '#d98642', '#37483d'),
+    createPerson(group, lanes[2] + 0.55, -1.8, '#397b76', '#3a4739'),
+    createPerson(group, lanes[2] + 1.2, -2.2, '#d98642', '#37483d'),
+  ];
+  for (const person of exitWalkers) {
+    person.visible = false;
+    person.userData.homePosition = person.position.clone();
+  }
+  const stop = addCityLandmark(group, 0, z);
+  stop.userData.routeIndex = undefined;
+  busStops.push({ landmark: stop, index, lane: 2, people, exitWalkers, waiting: true, boarding: [], alighting: [], prompted: false });
+  return stop;
 }
 
 function createRoadWorks(z) {
@@ -620,7 +710,7 @@ createTrafficSignal(-262);
 createBusiness('CALWINO BAR', 'CHOPS · COLD DRINKS', 11, -274, { wall: '#d9c68e', trim: '#527c54', sign: '#315d42' }, [5.0277, 7.93017]);
 createRoadWorks(-298);
 createPoliceCheckpoint(-338);
-createFuelStation(-390, 12);
+createFuelStation(-390, 7.2);
 createRoadSign('WELLINGTON BASSEY WAY', 'BARRACKS ROAD', -6.8, -298, [5.03702, 7.93128]);
 createStreetlight(7.3, -325);
 createSecretariat(-350);
@@ -636,10 +726,29 @@ createRoadSign('NWANIBA ROAD', 'ORON ROAD JUNCTION', 6.8, -705, [5.03279, 7.9310
 createIntersection(-770);
 createTrafficSignal(-770);
 createPoliceCheckpoint(-850);
-createFuelStation(-900, -12);
+createFuelStation(-900, -7.2);
 createRoadSign('IBB AVENUE', 'SOUTH UYO', -6.8, -795, [5.01834, 7.91132]);
 createRoadSign('ITAM ROAD', 'EASTERN UYO', 6.8, -875, [5.05399, 7.89907]);
 createRoadSign('NELSON MANDELA ROAD', 'IKOT EKPENE DISTRICT', -6.8, -960, [5.04552, 7.91508]);
+
+const routeShopfronts = [
+  ['IKOT JUNCTION EATERY', 'RICE · SOUP · COLD DRINKS', { wall: '#e5c78e', trim: '#477b55', sign: '#235d43' }],
+  ['AKA ROAD MARKET', 'FRESH GOODS · DAILY', { wall: '#e4bd80', trim: '#bb6747', sign: '#a94c36' }],
+  ['AFIA ETOI MARKET', 'ABAK ROAD · UYO', { wall: '#d8c28f', trim: '#688553', sign: '#486a41' }],
+  ['CALWINO BAR', 'ORON ROAD · CHOPS', { wall: '#d9c68e', trim: '#527c54', sign: '#315d42' }],
+  ['NWANIBA GARDEN CAFE', 'COFFEE · LOCAL BITES', { wall: '#d9d1a5', trim: '#477c78', sign: '#306b70' }],
+  ['BARRACKS ROAD STORE', 'WELLINGTON BASSEY WAY', { wall: '#e5d0a6', trim: '#64764f', sign: '#445d3e' }],
+  ['PLAZA SNACK BAR', 'IBOM PLAZA · UYO', { wall: '#e5bd85', trim: '#ba6848', sign: '#a94c36' }],
+  ['UNIUYO BOOKSHOP', 'IKPA ROAD CAMPUS', { wall: '#ddd0ac', trim: '#70495e', sign: '#583b50' }],
+];
+for (let index = 0; index < routeShopfronts.length; index += 1) {
+  const [name, subtitle, palette] = routeShopfronts[index];
+  const storefront = createBusiness(name, subtitle, index % 2 ? -11 : 11, -145 - index * 118, palette);
+  storefront.userData.routeIndex = index;
+  storefront.visible = index === selectedRoad;
+}
+
+for (const [index, z] of [-78, -205, -332, -472, -602, -738, -875, -1010].entries()) createBusStop(z, index);
 
 function createKeke(primary = false) {
   const group = new THREE.Group();
@@ -764,7 +873,7 @@ function createTrafficVehicle(type) {
 }
 
 const player = createKeke(true);
-player.position.set(roadCurve(3.4), 0, 3.4);
+player.position.set(routeCurve(3.4), 0, 3.4);
 player.scale.setScalar(1.08);
 scene.add(player);
 
@@ -803,12 +912,12 @@ function createPickup(kind, lane, z) {
   scene.add(group);
   pickups.push({ mesh: group, kind, lane, taken: false, phase: random() * Math.PI * 2 });
 }
-for (let i = 0; i < 18; i += 1) createPickup(i % 5 === 4 ? 'passenger' : 'coin', Math.floor(random() * 3), -16 - i * 12.5);
+for (let i = 0; i < 26; i += 1) createPickup('coin', Math.floor(random() * 3), -16 - i * 15);
 
 const ui = {
   score: document.querySelector('#score'), best: document.querySelector('#best-score'), speed: document.querySelector('#speed'),
   meter: document.querySelector('#speed-meter-fill'), fuel: document.querySelector('#fuel'), fuelMeter: document.querySelector('#fuel-meter-fill'),
-  coins: document.querySelector('#coins'), street: document.querySelector('#street-name'),
+  coins: document.querySelector('#coins'), wallet: document.querySelector('#wallet'), buyFuel: document.querySelector('#buy-fuel'), street: document.querySelector('#street-name'),
   mission: document.querySelector('#mission-title'), progress: document.querySelector('#mission-progress'), detail: document.querySelector('#mission-detail'),
   passengerTitle: document.querySelector('#passenger-title'), passengerDetail: document.querySelector('#passenger-detail'), passengers: document.querySelector('#passenger-count'),
   hornStatus: document.querySelector('#horn-status'), toast: document.querySelector('#toast'), landmark: document.querySelector('#landmark-label'), crash: document.querySelector('#crash-screen'),
@@ -820,7 +929,6 @@ const ui = {
 };
 
 const streets = ['Abak Road', 'Ikot Ekpene Road', 'Aka Road', 'Wellington Bassey Way', 'Atiku Abubakar Avenue', 'Oron Road', 'Nwaniba Road', 'Ikpa Road', 'IBB Avenue', 'Itam Road', 'Nelson Mandela Road'];
-const coinPointValue = 50;
 const leaderboardKey = 'kekenapepe-leaderboard';
 const roadChoices = [
   ['Ikot Ekpene Road', 'City centre traffic'], ['Aka Road', 'Busy shops and junctions'], ['Abak Road', 'Western Uyo route'],
@@ -833,10 +941,30 @@ const crashMessages = [
 ];
 const state = {
   lane: 1, lanePosition: 0, speed: 48, score: 0, coins: 0, distance: 0, time: 0,
-  active: false, braking: false, boosting: false, passengers: 0, dropDistance: null,
+  active: false, braking: false, boosting: false, passengers: 0, dropDistance: null, dropStopIndex: null,
   nextPickup: 1.5, streetIndex: 1, toastTimer: null, missionStage: 0, roadTime: 0,
-  fuel: 100, hornCooldown: 0, profileName: 'Uyo Driver', revives: 1,
+  fuel: fuelTankCapacity, wallet: 5000, fuelBought: 0, nairaEarned: 0, nairaSpent: 0, hornCooldown: 0,
+  profileName: 'Uyo Driver', revives: 1, runSaved: false, invincible: 0,
 };
+
+function buyFuelLiter() {
+  if (state.fuel >= fuelTankCapacity) {
+    showToast('Tank already full, boss.');
+    return;
+  }
+  if (state.wallet < fuelPricePerLiter) {
+    showToast('Wallet no reach ₦1,000 for fuel.');
+    return;
+  }
+  state.wallet -= fuelPricePerLiter;
+  state.nairaSpent += fuelPricePerLiter;
+  state.fuel = Math.min(fuelTankCapacity, state.fuel + 1);
+  state.fuelBought += 1;
+  ui.wallet.textContent = String(state.wallet);
+  ui.fuel.textContent = state.fuel.toFixed(1);
+  ui.fuelMeter.style.width = `${state.fuel / fuelTankCapacity * 100}%`;
+  showToast('One litre added. ₦1,000 paid.');
+}
 let bestScore = Number(localStorage.getItem('kekenapepe-best') || 0);
 ui.best.textContent = String(bestScore).padStart(6, '0');
 
@@ -856,10 +984,10 @@ function renderLeaderboard() {
     : '<li class="empty-entry"><span>1. First rider</span><strong>0</strong></li>';
 }
 
-function saveLeaderboardEntry(score, name, distance) {
+function saveLeaderboardEntry(score, name, distance, stats = {}) {
   const entries = getLeaderboard();
   const cleanedName = (name || 'Rider').trim().slice(0, 14) || 'Rider';
-  entries.push({ name: cleanedName, score, distance, at: Date.now() });
+  entries.push({ name: cleanedName, score, distance, coins: stats.coins || 0, earnedNaira: stats.earnedNaira || 0, fuelBought: stats.fuelBought || 0, wallet: stats.wallet || 0, at: Date.now() });
   entries.sort((a, b) => b.score - a.score || b.distance - a.distance);
   localStorage.setItem(leaderboardKey, JSON.stringify(entries.slice(0, 5)));
   renderLeaderboard();
@@ -887,7 +1015,7 @@ function createResultCard() {
   context.font = '700 24px DM Sans, sans-serif';
   context.fillStyle = '#c9e3ca';
   context.fillText(`${Math.floor(state.distance)} m   ·   ${Math.floor(state.score)} points`, 75, 315);
-  context.fillText(`${state.coins} coins   ·   ₦${state.coins * coinPointValue} earned`, 75, 355);
+  context.fillText(`${state.coins} coins   ·   ₦${state.nairaEarned} earned`, 75, 355);
   context.fillText(`${ui.street.textContent}   ·   Uyo, Nigeria`, 75, 395);
   context.fillStyle = '#d5ef43';
   context.font = '800 22px DM Sans, sans-serif';
@@ -915,10 +1043,49 @@ function showToast(message) {
   state.toastTimer = setTimeout(() => ui.toast.classList.remove('show'), 1550);
 }
 
+function applySelectedRoad(index) {
+  selectedRoad = index;
+  const positions = roadGeometry.attributes.position;
+  for (let point = 0; point < positions.count; point += 1) {
+    const worldZ = routeStart + positions.getZ(point);
+    positions.setX(point, routeCurve(worldZ) + roadBaseOffsets[point]);
+  }
+  positions.needsUpdate = true;
+  roadGeometry.computeVertexNormals();
+  for (const edge of roadEdges) {
+    const edgePositions = edge.geometry.attributes.position;
+    for (let point = 0; point < edgePositions.count; point += 1) {
+      const worldZ = routeStart + edgePositions.getZ(point);
+      edgePositions.setX(point, routeCurve(worldZ) + edge.baseOffsets[point]);
+    }
+    edgePositions.needsUpdate = true;
+    edge.geometry.computeVertexNormals();
+  }
+  for (const dash of dashes) dash.position.x = routeCurve(dash.position.z) + dash.userData.laneMarkX + activeRoute().laneBias;
+  for (const prop of scenery) prop.position.x = routeCurve(prop.position.z) + prop.userData.roadsideX;
+  for (const landmark of cityLandmarks) {
+    landmark.position.x = routeCurve(landmark.position.z) + landmark.userData.roadsideX;
+    landmark.visible = landmark.userData.routeIndex === undefined || landmark.userData.routeIndex === selectedRoad;
+  }
+  for (const stop of busStops) {
+    stop.signFace.material.map?.dispose();
+    stop.signFace.material.dispose();
+    const stopName = routeStopNames[selectedRoad][stop.index % routeStopNames[selectedRoad].length];
+    stop.signFace.material = createSignMaterial(stopName.toUpperCase(), 'BRAKE TO PICK UP', '#397654');
+  }
+  for (const item of traffic) {
+    item.lanePosition = routeCurve(item.mesh.position.z) + routeLaneX(item.lane);
+    item.mesh.position.x = item.lanePosition;
+  }
+  for (const pickup of pickups) pickup.mesh.position.x = routeCurve(pickup.mesh.position.z) + routeLaneX(pickup.lane);
+  player.position.x = routeCurve(player.position.z) + routeLaneX(state.lane);
+  ui.street.textContent = activeRoute().name;
+}
+
 function openRoadPicker() {
   ui.roadGrid.innerHTML = roadChoices.map(([name, detail], index) => `<button class="road-choice${index === selectedRoad ? ' is-selected' : ''}" data-road-index="${index}"><strong>${name}</strong><small>${detail}</small></button>`).join('');
   ui.roadGrid.querySelectorAll('.road-choice').forEach((choice) => choice.addEventListener('click', () => {
-    selectedRoad = Number(choice.dataset.roadIndex);
+    applySelectedRoad(Number(choice.dataset.roadIndex));
     ui.roadGrid.querySelectorAll('.road-choice').forEach((item) => item.classList.toggle('is-selected', item === choice));
   }));
   ui.startScreen.classList.add('hidden');
@@ -947,28 +1114,100 @@ function endRun(reason = null) {
   const final = Math.floor(state.score);
   if (final > bestScore) {
     bestScore = final;
-    localStorage.setItem('kekenapepe-best', String(bestScore));
   }
   ui.best.textContent = String(bestScore).padStart(6, '0');
   state.profileName = localStorage.getItem('kekenapepe-name') || 'Rider';
   ui.saveName.value = localStorage.getItem('kekenapepe-name') || '';
+  state.runSaved = false;
   const crashReason = reason || crashMessages[Math.floor(random() * crashMessages.length)];
   ui.crashMessage.textContent = crashReason;
-  ui.finalScore.textContent = `${state.profileName} made it ${Math.floor(state.distance)} m · ${final} points · ${state.coins} coins · ₦${state.coins * coinPointValue} earned`;
+  ui.finalScore.textContent = `${state.profileName} made it ${Math.floor(state.distance)} m · ${final} points · ${state.coins} coins · ₦${state.nairaEarned} earned · ₦${state.wallet} left`;
   ui.downloadCardButton.href = createResultCard();
   ui.reviveButton.hidden = state.revives <= 0;
   ui.crash.hidden = false;
 }
 
+function updateBusStops(delta) {
+  for (const stop of busStops) {
+    const stopX = routeCurve(stop.landmark.position.z) + routeLaneX(stop.lane);
+    const stopDistance = stop.landmark.position.z - player.position.z;
+    const laneDistance = Math.abs(player.position.x - stopX);
+    for (const boarder of stop.boarding) {
+      boarder.elapsed += delta;
+      const progress = Math.min(1, boarder.elapsed / 1.1);
+      boarder.person.position.x = THREE.MathUtils.lerp(boarder.startX, lanes[stop.lane], progress);
+      boarder.person.position.z = THREE.MathUtils.lerp(boarder.startZ, -0.8, progress);
+      boarder.person.scale.setScalar(1 - progress * 0.92);
+      if (progress >= 1) boarder.person.visible = false;
+    }
+    stop.boarding = stop.boarding.filter((boarder) => boarder.elapsed < 1.1);
+    for (const alighter of stop.alighting) {
+      alighter.elapsed += delta;
+      const progress = Math.min(1, alighter.elapsed / 1.25);
+      alighter.person.position.x = THREE.MathUtils.lerp(lanes[stop.lane], alighter.endX, progress);
+      alighter.person.position.z = THREE.MathUtils.lerp(-0.8, alighter.endZ, progress);
+      alighter.person.scale.setScalar(Math.max(0.08, progress));
+      if (progress >= 1) alighter.person.visible = false;
+    }
+    stop.alighting = stop.alighting.filter((alighter) => alighter.elapsed < 1.25);
+
+    if (Math.abs(stopDistance) < 22 && laneDistance < 2.2 && (stop.waiting || state.dropStopIndex === stop.index)) {
+      stop.landmark.userData.lastPrompt ??= -Infinity;
+      if (state.time - stop.landmark.userData.lastPrompt > 5) {
+        stop.landmark.userData.lastPrompt = state.time;
+        const action = state.dropStopIndex === stop.index ? 'drop off passengers' : 'pick up passengers';
+        showToast(`${routeStopNames[selectedRoad][stop.index % routeStopNames[selectedRoad].length]} stop. Hold BRAKE to ${action}.`);
+      }
+    }
+
+    const stoppedInBay = Math.abs(stopDistance) < 2.5 && laneDistance < 1.8 && state.braking && state.speed <= 0.8;
+    if (stoppedInBay && stop.waiting && state.passengers < 3) {
+      const person = stop.people.find((waiting) => waiting.visible);
+      if (person) {
+        stop.waiting = false;
+        stop.boarding.push({ person, elapsed: 0, startX: person.position.x, startZ: person.position.z });
+        state.passengers += 1;
+        state.dropStopIndex = (stop.index - 1 + busStops.length) % busStops.length;
+        showToast(`${routeStopNames[selectedRoad][stop.index % routeStopNames[selectedRoad].length]}: passenger boarded.`);
+      }
+    } else if (stoppedInBay && state.passengers > 0 && state.dropStopIndex === stop.index) {
+      const count = state.passengers;
+      const fare = count * 500;
+      state.score += count * 150;
+      state.wallet += fare;
+      state.nairaEarned += fare;
+      state.coins += count;
+      state.passengers = 0;
+      state.dropStopIndex = null;
+      for (let index = 0; index < count; index += 1) {
+        const person = stop.exitWalkers[index];
+        person.visible = true;
+        person.position.copy(person.userData.homePosition);
+        person.scale.setScalar(0.08);
+        stop.alighting.push({ person, elapsed: 0, endX: person.position.x + 2.8, endZ: person.position.z + 1.2 });
+      }
+      showToast(`Passengers dropped. ₦${fare} fare earned.`);
+    }
+  }
+}
+
 function reviveRun() {
   if (state.active || state.revives <= 0) return;
+  if (state.wallet < 200) {
+    showToast('Revive costs ₦200. No enough cash, boss.');
+    return;
+  }
   state.revives -= 1;
+  state.wallet -= 200;
+  state.nairaSpent += 200;
   state.active = true;
-  state.fuel = Math.max(30, state.fuel);
+  state.invincible = 3;
+  state.fuel = Math.max(3, state.fuel);
   state.speed = 34;
   state.hornCooldown = 0;
   player.position.z = Math.max(player.position.z - 18, -12);
   player.position.x = routeCurve(player.position.z) + routeLaneX(state.lane);
+  ui.wallet.textContent = String(state.wallet);
   ui.crash.hidden = true;
   showToast('Revive used! Back on the road, boss.');
   if (soundEnabled) playChime();
@@ -985,11 +1224,18 @@ function resetRun() {
   state.active = true;
   state.passengers = 0;
   state.dropDistance = null;
+  state.dropStopIndex = null;
   state.nextPickup = 1.5;
-  state.streetIndex = 1;
+  state.streetIndex = 0;
   state.missionStage = 0;
   state.roadTime = 0;
-  state.fuel = 100;
+  state.fuel = fuelTankCapacity;
+  state.wallet = 5000;
+  state.fuelBought = 0;
+  state.nairaEarned = 0;
+  state.nairaSpent = 0;
+  state.invincible = 0;
+  state.runSaved = false;
   state.hornCooldown = 0;
   state.revives = 1;
   if (engineGain && soundEnabled) engineGain.gain.setTargetAtTime(0.035, audioContext.currentTime, 0.08);
@@ -1005,9 +1251,30 @@ function resetRun() {
   }
   for (const landmark of cityLandmarks) {
     landmark.position.z = landmark.userData.startZ;
-    landmark.position.x = landmark.userData.startX;
+    landmark.position.x = routeCurve(landmark.position.z) + landmark.userData.roadsideX;
+    landmark.visible = landmark.userData.routeIndex === undefined || landmark.userData.routeIndex === selectedRoad;
   }
   for (const checkpoint of policeCheckpoints) checkpoint.userData.cleared = false;
+  for (const checkpoint of policeCheckpoints) {
+    checkpoint.userData.cleared = false;
+    for (const barrier of checkpoint.userData.blockade) barrier.visible = true;
+  }
+  for (const stop of busStops) {
+    stop.waiting = true;
+    stop.prompted = false;
+    stop.boarding = [];
+    stop.alighting = [];
+    for (const person of stop.people) {
+      person.visible = true;
+      person.position.copy(person.userData.homePosition);
+      person.scale.setScalar(1);
+    }
+    for (const person of stop.exitWalkers) {
+      person.visible = false;
+      person.position.copy(person.userData.homePosition);
+      person.scale.setScalar(1);
+    }
+  }
   for (const [index, item] of pickups.entries()) {
     item.taken = false;
     item.kind = index % 5 === 4 ? 'passenger' : 'coin';
@@ -1025,8 +1292,9 @@ function resetRun() {
   ui.passengerDetail.textContent = 'Look out for a pickup';
   ui.passengers.textContent = '0';
   ui.landmark.classList.remove('visible');
-  ui.fuel.textContent = '100';
+  ui.fuel.textContent = String(fuelTankCapacity);
   ui.fuelMeter.style.width = '100%';
+  ui.wallet.textContent = String(state.wallet);
   ui.hornStatus.textContent = 'READY';
   ui.startScreen.classList.add('hidden');
   ui.roadScreen.hidden = true;
@@ -1053,6 +1321,7 @@ function bindHold(button, key) {
 
 bindHold(document.querySelector('#brake'), 'braking');
 bindHold(document.querySelector('#faster'), 'boosting');
+ui.buyFuel.addEventListener('click', buyFuelLiter);
 ui.startButton.addEventListener('click', openRoadPicker);
 document.querySelector('#home-roads').addEventListener('click', openRoadPicker);
 ui.roadDone.addEventListener('click', resetRun);
@@ -1060,10 +1329,33 @@ ui.roadBack.addEventListener('click', closeRoadPicker);
 ui.saveName.addEventListener('input', syncProfileName);
 ui.reviveButton.addEventListener('click', reviveRun);
 ui.saveScoreButton.addEventListener('click', () => {
+  if (state.runSaved) {
+    showToast('This run has already been saved.');
+    return;
+  }
   const cleanName = (ui.saveName.value || 'Rider').trim().slice(0, 14) || 'Rider';
   state.profileName = cleanName;
   localStorage.setItem('kekenapepe-name', cleanName);
-  saveLeaderboardEntry(Math.floor(state.score), cleanName, Math.floor(state.distance));
+  saveLeaderboardEntry(Math.floor(state.score), cleanName, Math.floor(state.distance), {
+    coins: state.coins, earnedNaira: state.nairaEarned, fuelBought: state.fuelBought, wallet: state.wallet,
+  });
+  let savedStats = {};
+  try {
+    savedStats = JSON.parse(localStorage.getItem('kekenapepe-stats') || '{}');
+  } catch {
+    savedStats = {};
+  }
+  savedStats.totalRuns = (savedStats.totalRuns || 0) + 1;
+  savedStats.totalDistance = (savedStats.totalDistance || 0) + Math.floor(state.distance);
+  savedStats.totalCoins = (savedStats.totalCoins || 0) + state.coins;
+  savedStats.totalEarned = (savedStats.totalEarned || 0) + state.nairaEarned;
+  savedStats.totalSpent = (savedStats.totalSpent || 0) + state.nairaSpent;
+  savedStats.totalFuelBought = (savedStats.totalFuelBought || 0) + state.fuelBought;
+  savedStats.bestScore = Math.max(savedStats.bestScore || 0, Math.floor(state.score));
+  savedStats.wallet = state.wallet;
+  localStorage.setItem('kekenapepe-stats', JSON.stringify(savedStats));
+  localStorage.setItem('kekenapepe-best', String(bestScore));
+  state.runSaved = true;
   showToast(`Saved as ${cleanName}`);
 });
 ui.shareXButton.addEventListener('click', () => {
@@ -1172,17 +1464,14 @@ function animate(now) {
   if (state.active) {
     state.time += delta;
     state.hornCooldown = Math.max(0, state.hornCooldown - delta);
-    state.fuel = Math.max(0, state.fuel - delta * (state.boosting ? 4.8 : 2.4));
-    if (state.fuel <= 0) {
-      endRun('Fuel empty. The keke coasted to a stop in the middle of Uyo.');
-    }
+    state.fuel = Math.max(0, state.fuel - delta * (state.boosting ? 0.085 : state.braking ? 0.01 : 0.04));
     const signalPhase = state.time % 9;
     const activeSignal = signalPhase < 4.8 ? 'green' : signalPhase < 5.8 ? 'amber' : 'red';
     for (const signal of trafficSignals) {
       for (const [name, material] of Object.entries(signal)) material.emissiveIntensity = name === activeSignal ? 1.5 : 0.04;
     }
     const cruisingSpeed = Math.min(68, 48 + Math.floor(state.distance / 360) * 4);
-    const targetSpeed = state.braking ? 0 : state.boosting ? Math.min(100, cruisingSpeed + 34) : cruisingSpeed;
+    const targetSpeed = state.fuel <= 0 || state.braking ? 0 : state.boosting ? Math.min(100, cruisingSpeed + 34) : cruisingSpeed;
     state.speed = THREE.MathUtils.damp(state.speed, targetSpeed, state.braking ? 7.5 : 2.8, delta);
     if (soundEnabled && engineOscillator) {
       engineOscillator.frequency.setTargetAtTime(52 + state.speed * 1.15, audioContext.currentTime, 0.08);
@@ -1219,22 +1508,32 @@ function animate(now) {
     for (const checkpoint of policeCheckpoints) {
       const barrierDistance = checkpoint.position.z + checkpoint.userData.barrierOffset - player.position.z;
       if (!checkpoint.userData.cleared && Math.abs(barrierDistance) < 5) {
-        if (state.speed <= 2) {
+        if (state.braking && state.speed <= 0.8) {
           checkpoint.userData.cleared = true;
+          for (const barrier of checkpoint.userData.blockade) barrier.visible = false;
           showToast('Police checkpoint cleared. Oya, continue!');
         } else if (Math.abs(barrierDistance) < 1.1) {
-          endRun('You rushed the police checkpoint. Stop fully next time.');
+          endRun('You hit the police blockade. Stop and wait for the officers.');
         }
       }
     }
     for (const station of fuelStations) {
       const stationDistance = station.position.z - player.position.z;
       const stationLaneDistance = Math.abs(station.position.x - player.position.x);
-      if (Math.abs(stationDistance) < 4.5 && stationLaneDistance < 5 && state.speed <= 2 && state.fuel < 100) {
-        state.fuel = Math.min(100, state.fuel + delta * 28);
-        showToast('Fueling up... hold BRAKE');
+      const stoppedAtStation = Math.abs(stationDistance) < 5 && stationLaneDistance < 5 && state.speed <= 0.8 && state.braking;
+      if (stoppedAtStation && state.fuel < fuelTankCapacity && state.wallet >= fuelPricePerLiter) {
+        const litersBought = Math.min(delta * 0.8, fuelTankCapacity - state.fuel, state.wallet / fuelPricePerLiter);
+        state.fuel += litersBought;
+        state.wallet -= litersBought * fuelPricePerLiter;
+        state.nairaSpent += litersBought * fuelPricePerLiter;
+        state.fuelBought += litersBought;
+        if (!station.userData.fueling) showToast('Fueling up · ₦1,000 per litre');
+        station.userData.fueling = true;
+      } else {
+        station.userData.fueling = false;
       }
     }
+    updateBusStops(delta);
     const roundaboutDistance = roundaboutLandmark.position.z - player.position.z;
     if (roundaboutDistance > -1.5 && roundaboutDistance < 1.5 && state.lane === 1) {
       endRun('You hit the roundabout island. Choose an outer lane next time.');
@@ -1296,28 +1595,20 @@ function animate(now) {
         item.mesh.visible = false;
         if (item.kind === 'coin') {
           state.coins += 1;
+          state.wallet += coinPointValue;
+          state.nairaEarned += coinPointValue;
           state.score += coinPointValue;
           if (soundEnabled) playChime();
           showToast(`Coin collected! +${coinPointValue} points · ₦${coinPointValue}`);
-        } else if (state.passengers === 0) {
-          state.passengers = 1;
-          state.dropDistance = state.distance + 160;
-          showToast('Passenger onboard! Drop-off ahead.');
         }
       }
     }
-
-    if (state.passengers && state.distance >= state.dropDistance) {
-      state.passengers = 0;
-      state.dropDistance = null;
-      state.score += 150;
-      showToast('Drop-off complete! +150 points');
-    }
-    const streetIndex = (Math.floor(state.distance / 180) + 1) % streets.length;
+    const currentStreetList = routeStreetLists[selectedRoad];
+    const streetIndex = Math.floor(state.distance / 180) % currentStreetList.length;
     if (streetIndex !== state.streetIndex) {
       state.streetIndex = streetIndex;
-      ui.street.textContent = streets[streetIndex];
-      showToast(`Now riding on ${streets[streetIndex]}`);
+      ui.street.textContent = currentStreetList[streetIndex];
+      showToast(`Now riding on ${currentStreetList[streetIndex]}`);
     }
     if (state.distance >= 400 && state.missionStage === 0) {
       state.missionStage = 1;
@@ -1328,7 +1619,7 @@ function animate(now) {
       ui.progress.style.width = `${Math.min(100, state.distance / 400 * 100)}%`;
       ui.detail.textContent = `${Math.min(400, Math.floor(state.distance))} / 400 m`;
     } else if (state.missionStage === 1) {
-      if (streetIndex === 1) state.roadTime += delta;
+      if (ui.street.textContent === 'Ikot Ekpene Road') state.roadTime += delta;
       ui.progress.style.width = `${Math.min(100, state.roadTime / 60 * 100)}%`;
       ui.detail.textContent = `${Math.min(60, Math.floor(state.roadTime))} / 60 sec · Ikot Ekpene`;
       if (state.roadTime >= 60) {
@@ -1345,13 +1636,14 @@ function animate(now) {
     ui.score.textContent = String(Math.floor(state.score)).padStart(6, '0');
     ui.speed.textContent = String(Math.round(state.speed));
     ui.meter.style.width = `${Math.min(100, state.speed / 88 * 100)}%`;
-    ui.fuel.textContent = String(Math.max(0, Math.round(state.fuel)));
-    ui.fuelMeter.style.width = `${Math.max(0, state.fuel)}%`;
+    ui.fuel.textContent = state.fuel.toFixed(1);
+    ui.fuelMeter.style.width = `${Math.max(0, state.fuel / fuelTankCapacity * 100)}%`;
     ui.coins.textContent = String(state.coins);
+    ui.wallet.textContent = String(Math.floor(state.wallet));
     ui.hornStatus.textContent = state.hornCooldown > 0 ? `${state.hornCooldown.toFixed(1)}s` : 'READY';
     ui.passengers.textContent = String(state.passengers);
     ui.passengerTitle.textContent = state.passengers ? 'Passenger onboard' : 'No passenger';
-    ui.passengerDetail.textContent = state.passengers ? `${Math.max(0, Math.ceil(state.dropDistance - state.distance))} m to drop-off` : 'Look out for a pickup';
+    ui.passengerDetail.textContent = state.passengers ? `Stop at ${routeStopNames[selectedRoad][state.dropStopIndex]}` : 'Look out for a pickup';
   }
   renderer.render(scene, camera);
 }
