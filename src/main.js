@@ -495,9 +495,9 @@ function createBusStop(z, index) {
   for (const postX of [6.4, 9.6]) makeBox(group, 0.18, 2.8, 0.18, green, [postX, 1.4, -0.3]);
   makeBox(group, 3.6, 0.2, 2.8, concrete, [8, 2.85, -0.3]);
   makeBox(group, 3.3, 0.7, 0.14, green, [8, 2.2, 1.1]);
-  const stopSign = new THREE.Mesh(new THREE.PlaneGeometry(3.1, 0.56), createSignMaterial('KEKE STOP', 'BRAKE TO PICK UP', '#397654'));
-  stopSign.position.set(8, 2.2, 1.18);
-  group.add(stopSign);
+  const signFace = new THREE.Mesh(new THREE.PlaneGeometry(3.1, 0.56), createSignMaterial('KEKE STOP', 'BRAKE TO PICK UP', '#397654'));
+  signFace.position.set(8, 2.2, 1.18);
+  group.add(signFace);
   const people = [
     createPerson(group, lanes[2] + 1.3, 2.2, '#d98642', '#37483d'),
     createPerson(group, lanes[2] + 2.05, 2.8, '#397b76', '#3a4739'),
@@ -514,7 +514,7 @@ function createBusStop(z, index) {
   }
   const stop = addCityLandmark(group, 0, z);
   stop.userData.routeIndex = undefined;
-  busStops.push({ landmark: stop, index, lane: 2, people, exitWalkers, waiting: true, boarding: [], alighting: [], prompted: false });
+  busStops.push({ landmark: stop, signFace, index, lane: 2, people, exitWalkers, waiting: true, boarding: [], alighting: [], prompted: false });
   return stop;
 }
 
@@ -925,6 +925,7 @@ const ui = {
   startScreen: document.querySelector('#start-screen'), startButton: document.querySelector('#start-button'), reviveButton: document.querySelector('#revive-button'),
   saveName: document.querySelector('#save-name'), saveScoreButton: document.querySelector('#save-score-button'), shareXButton: document.querySelector('#share-x-button'),
   shareCopyButton: document.querySelector('#share-copy-button'), downloadCardButton: document.querySelector('#download-card-button'), leaderboard: document.querySelector('#leaderboard-list'),
+  leaderboardScreen: document.querySelector('#leaderboard-screen'), leaderboardDone: document.querySelector('#leaderboard-done'),
   roadScreen: document.querySelector('#road-screen'), roadGrid: document.querySelector('#road-grid'), roadDone: document.querySelector('#road-done'), roadBack: document.querySelector('#road-back'),
 };
 
@@ -968,20 +969,43 @@ function buyFuelLiter() {
 let bestScore = Number(localStorage.getItem('kekenapepe-best') || 0);
 ui.best.textContent = String(bestScore).padStart(6, '0');
 
+let leaderboardPeriod = 'all-time';
+let leaderboardReturnTo = 'home';
+
 function getLeaderboard() {
   try {
-    return JSON.parse(localStorage.getItem(leaderboardKey) || '[]');
+    const entries = JSON.parse(localStorage.getItem(leaderboardKey) || '[]');
+    return Array.isArray(entries) ? entries : [];
   } catch {
     return [];
   }
 }
 
 function renderLeaderboard() {
-  const entries = getLeaderboard();
   if (!ui.leaderboard) return;
-  ui.leaderboard.innerHTML = entries.length
-    ? entries.slice(0, 5).map((entry, index) => `<li><span>${index + 1}. ${entry.name}</span><strong>${entry.score}</strong></li>`).join('')
-    : '<li class="empty-entry"><span>1. First rider</span><strong>0</strong></li>';
+  const entries = getLeaderboard();
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const week = today - ((now.getDay() + 6) % 7) * 86400000;
+  const cutoff = leaderboardPeriod === 'today' ? today : leaderboardPeriod === 'week' ? week : 0;
+  const filteredEntries = entries.filter((entry) => Number(entry.at) >= cutoff).slice(0, 10);
+  ui.leaderboard.replaceChildren();
+  if (!filteredEntries.length) {
+    const emptyEntry = document.createElement('li');
+    emptyEntry.className = 'empty-entry';
+    emptyEntry.textContent = 'No rides saved for this period yet.';
+    ui.leaderboard.append(emptyEntry);
+    return;
+  }
+  for (const [index, entry] of filteredEntries.entries()) {
+    const row = document.createElement('li');
+    const name = document.createElement('span');
+    const score = document.createElement('strong');
+    name.textContent = `${index + 1}. ${entry.name || 'Rider'}`;
+    score.textContent = String(Number(entry.score) || 0);
+    row.append(name, score);
+    ui.leaderboard.append(row);
+  }
 }
 
 function saveLeaderboardEntry(score, name, distance, stats = {}) {
@@ -989,8 +1013,22 @@ function saveLeaderboardEntry(score, name, distance, stats = {}) {
   const cleanedName = (name || 'Rider').trim().slice(0, 14) || 'Rider';
   entries.push({ name: cleanedName, score, distance, coins: stats.coins || 0, earnedNaira: stats.earnedNaira || 0, fuelBought: stats.fuelBought || 0, wallet: stats.wallet || 0, at: Date.now() });
   entries.sort((a, b) => b.score - a.score || b.distance - a.distance);
-  localStorage.setItem(leaderboardKey, JSON.stringify(entries.slice(0, 5)));
+  localStorage.setItem(leaderboardKey, JSON.stringify(entries.slice(0, 50)));
   renderLeaderboard();
+}
+
+function openLeaderboard(returnTo = 'home') {
+  leaderboardReturnTo = returnTo;
+  renderLeaderboard();
+  ui.startScreen.classList.add('hidden');
+  ui.crash.hidden = true;
+  ui.leaderboardScreen.hidden = false;
+}
+
+function closeLeaderboard() {
+  ui.leaderboardScreen.hidden = true;
+  if (leaderboardReturnTo === 'crash') ui.crash.hidden = false;
+  else ui.startScreen.classList.remove('hidden');
 }
 
 function createResultCard() {
@@ -1324,6 +1362,18 @@ bindHold(document.querySelector('#faster'), 'boosting');
 ui.buyFuel.addEventListener('click', buyFuelLiter);
 ui.startButton.addEventListener('click', openRoadPicker);
 document.querySelector('#home-roads').addEventListener('click', openRoadPicker);
+document.querySelector('#home-leaders').addEventListener('click', () => openLeaderboard('home'));
+document.querySelector('#crash-leaders-button').addEventListener('click', () => openLeaderboard('crash'));
+ui.leaderboardDone.addEventListener('click', closeLeaderboard);
+document.querySelectorAll('.leaderboard-tab').forEach((tab) => tab.addEventListener('click', () => {
+  leaderboardPeriod = tab.dataset.period;
+  document.querySelectorAll('.leaderboard-tab').forEach((item) => {
+    const selected = item === tab;
+    item.classList.toggle('is-selected', selected);
+    item.setAttribute('aria-selected', String(selected));
+  });
+  renderLeaderboard();
+}));
 ui.roadDone.addEventListener('click', resetRun);
 ui.roadBack.addEventListener('click', closeRoadPicker);
 ui.saveName.addEventListener('input', syncProfileName);
@@ -1373,6 +1423,18 @@ ui.shareCopyButton.addEventListener('click', async () => {
 });
 document.querySelector('#horn').addEventListener('click', triggerHorn);
 document.querySelector('#restart-button').addEventListener('click', resetRun);
+document.querySelector('#share-button').addEventListener('click', async () => {
+  const text = `${state.profileName || 'Rider'} scored ${Math.floor(state.score)} in Kekenapepe: Uyo Run, covering ${Math.floor(state.distance)} m on ${ui.street.textContent}.`;
+  if (!navigator.share) {
+    ui.shareCopyButton.click();
+    return;
+  }
+  try {
+    await navigator.share({ title: 'Kekenapepe: Uyo Run', text, url: window.location.href });
+  } catch (error) {
+    if (error.name !== 'AbortError') showToast('Sharing is unavailable right now.');
+  }
+});
 document.querySelectorAll('input[name="vehicle"]').forEach((choice) => {
   choice.addEventListener('change', () => {
     document.querySelectorAll('.profile-option').forEach((option) => option.classList.toggle('is-selected', option.querySelector('input').checked));

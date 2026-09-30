@@ -138,6 +138,17 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .road-choice small { color: #798a7e; font-size: 8px; text-transform: uppercase; letter-spacing: .1em; }
 .road-choice.is-selected { border-color: #b5cc28; background: #d5ef43; }
 .text-button { display: block; margin: 12px auto 0; border: 0; background: none; color: #597364; font-size: 10px; font-weight: 800; cursor: pointer; }
+.leaderboard-screen { position: absolute; z-index: 7; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(17,29,27,.7); backdrop-filter: blur(8px); }
+.leaderboard-screen[hidden] { display: none; }
+.leaderboard-panel { width: min(520px,100%); display: grid; gap: 16px; padding: clamp(20px,5vw,34px); background: rgba(248,255,247,.97); }
+.leaderboard-panel h2 { margin: -8px 0 0; color: #1d4032; font: 800 46px/.95 'Barlow Condensed',sans-serif; }
+.leaderboard-tabs { display: grid; grid-template-columns: repeat(3,1fr); border-bottom: 1px solid rgba(36,75,57,.15); }
+.leaderboard-tab { padding: 11px 5px; border: 0; border-bottom: 3px solid transparent; background: none; color: #718075; font: 800 9px 'DM Sans',sans-serif; cursor: pointer; }
+.leaderboard-tab.is-selected { border-color: #d5b52e; color: #294b3b; }
+#leaderboard-list { min-height: 150px; max-height: 46vh; margin: 0; padding: 0; display: grid; align-content: start; gap: 0; overflow: auto; list-style: none; color: #284a3d; font: 700 14px 'DM Sans',sans-serif; }
+#leaderboard-list li { display: flex; justify-content: space-between; gap: 16px; padding: 13px 4px; border-bottom: 1px solid rgba(36,75,57,.1); }
+#leaderboard-list li strong { color: #1d4032; font-variant-numeric: tabular-nums; }
+#leaderboard-list .empty-entry { color: #718075; font-size: 12px; }
 .start-panel h1 { margin: 0; font: 800 clamp(38px,6vw,70px)/.9 'Barlow Condensed',sans-serif; color: #1d4032; }
 .start-tagline { margin: 0; color: #355a4c; font: 700 18px 'Barlow Condensed',sans-serif; letter-spacing: .06em; }
 .profile-field { display: grid; gap: 8px; color: #395a4a; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }

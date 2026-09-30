@@ -71,6 +71,19 @@
       <div class="road-screen" id="road-screen" hidden>
         <div class="road-panel"><span class="crash-kicker">STARTING POINT</span><h2>Choose Your Road</h2><p>Every road has its own rhythm.</p><div class="road-grid" id="road-grid"></div><button id="road-done" class="primary-button">START RIDE <span aria-hidden="true">↗</span></button><button id="road-back" class="text-button">BACK</button></div>
       </div>
+      <div class="leaderboard-screen" id="leaderboard-screen" hidden>
+        <section class="leaderboard-panel" aria-labelledby="leaderboard-title">
+          <span class="crash-kicker">LOCAL RIDERS</span>
+          <h2 id="leaderboard-title">Leaderboard</h2>
+          <div class="leaderboard-tabs" role="tablist" aria-label="Leaderboard period">
+            <button class="leaderboard-tab" data-period="today" role="tab" aria-selected="false">TODAY</button>
+            <button class="leaderboard-tab" data-period="week" role="tab" aria-selected="false">THIS WEEK</button>
+            <button class="leaderboard-tab is-selected" data-period="all-time" role="tab" aria-selected="true">ALL TIME</button>
+          </div>
+          <ol id="leaderboard-list" aria-live="polite"></ol>
+          <button id="leaderboard-done" class="primary-button">DONE</button>
+        </section>
+      </div>
       <div class="crash-screen" id="crash-screen" hidden>
         <span class="crash-kicker">AH! E DON HAPPEN</span>
         <h1 id="crash-message">Even the keke needs a breather.</h1>
@@ -90,7 +103,8 @@
         <div class="crash-actions">
           <button id="revive-button" class="secondary-button" hidden>REVIVE <span aria-hidden="true">+1</span></button>
           <button id="restart-button" class="primary-button">RIDE AGAIN <span aria-hidden="true">↗</span></button>
-            <button id="share-button" class="secondary-button">SHARE RUN <span aria-hidden="true">↗</span></button>
+          <button id="share-button" class="secondary-button">SHARE RUN <span aria-hidden="true">↗</span></button>
+          <button id="crash-leaders-button" class="secondary-button">LEADERBOARD</button>
         </div>
       </div>
       <div class="loading-screen" id="loading-screen" aria-live="polite"><strong>KEKENAPEPE</strong><span id="loading-copy">LOADING UYO AYAYA...</span><i></i></div>
