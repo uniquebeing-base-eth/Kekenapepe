@@ -23,8 +23,8 @@
         <div class="score-block"><span class="eyebrow">RUN SCORE</span><strong id="score">000000</strong><span class="score-best">BEST <b id="best-score">000000</b></span></div>
         <div class="hud-stats">
           <div class="stat"><span class="stat-label">SPEED</span><strong><span id="speed">48</span><small> km/h</small></strong><div class="speed-meter"><i id="speed-meter-fill"></i></div></div>
-          <div class="stat coin-stat"><span class="stat-label">COINS</span><strong><span class="coin-icon">●</span><span id="coins">0</span></strong><small class="stat-caption">₦<span id="wallet">5000</span></small></div>
-          <div class="stat fuel-stat"><div class="fuel-heading"><span class="stat-label">FUEL</span><button id="buy-fuel" class="fuel-buy-button">+1L · ₦1K</button></div><strong><span id="fuel">20</span><small> L</small></strong><div class="fuel-meter"><i id="fuel-meter-fill"></i></div></div>
+          <div class="stat coin-stat"><span class="stat-label">POCKET</span><strong><span class="coin-icon">₦</span><span id="coins">0</span></strong><small class="stat-caption">collected</small></div>
+          <div class="stat fuel-stat"><span class="stat-label">FUEL</span><strong><span id="fuel">100</span><small>%</small></strong><div class="fuel-meter"><i id="fuel-meter-fill"></i></div></div>
           <div class="stat horn-stat"><span class="stat-label">HORN</span><strong id="horn-status">READY</strong></div>
         </div>
       </section>
@@ -47,44 +47,38 @@
 
       <footer class="controls" aria-label="Driving controls">
         <div class="control-guide" aria-label="How to drive">
-          <span><b>← / → OR A / D</b> steer lanes</span>
+          <span><b>SWIPE LEFT / RIGHT</b> change lane</span>
           <span><b>HOLD BRAKE</b> slow down</span>
           <span><b>HOLD FASTER</b> boost speed</span>
         </div>
         <a class="osm-credit" href="https://www.openstreetmap.org/#map=14/5.03890/7.90950" target="_blank" rel="noreferrer">MAP DATA © OPENSTREETMAP</a>
         <div class="pedal-controls">
-          <button class="control-button steering-button" id="steer-left" aria-label="Steer left" title="Steer left">←</button>
-          <button class="control-button steering-button" id="steer-right" aria-label="Steer right" title="Steer right">→</button>
           <button class="control-button pedal-button brake-button" id="brake" aria-label="Brake" title="Brake"><span class="pedal-icon" aria-hidden="true">Ⅱ</span><span>BRAKE</span></button>
           <button class="control-button pedal-button faster-button" id="faster" aria-label="Go faster" title="Go faster"><span class="pedal-icon" aria-hidden="true">↗</span><span>FASTER</span></button>
           <button class="control-button pedal-button horn-button" id="horn" aria-label="Sound the horn" title="Sound the horn"><span class="pedal-icon" aria-hidden="true">♫</span><span>HORN</span></button>
         </div>
       </footer>
       <div class="start-screen" id="start-screen" aria-live="polite">
-        <div class="start-panel home-panel">
-          <div class="home-heading"><span class="crash-kicker">UYO, AKWA IBOM</span><h1>UYO RUN</h1><p id="today-label">TODAY: SUNNY THURSDAY</p></div>
-          <section class="home-missions"><div><span class="panel-label">TODAY'S MISSIONS</span><strong>LVL 1 <small id="mission-count">0/3 DONE</small></strong></div><div class="home-progress"><i></i></div><small>Reach Ibom Plaza · Carry a passenger · Collect 10 coins</small></section>
-          <button id="start-button" class="primary-button hero-button">OYA, DRIVE! <span aria-hidden="true">↗</span></button>
-          <div class="home-secondary"><button id="home-roads" class="secondary-home-button">CHOOSE ROAD</button><button id="home-leaders" class="secondary-home-button">LEADERS</button></div>
-          <section class="tips"><span class="panel-label">QUICK TIPS</span><p><b>01</b> Hold BRAKE at bus stops to pick passengers.</p><p><b>02</b> Drop them at their stop to get paid.</p><p><b>03</b> Honk to clear the road and alert traffic.</p></section>
-          <small class="home-footnote">Install the app · Drive smart · No wahala</small>
-        </div>
-      </div>
-      <div class="road-screen" id="road-screen" hidden>
-        <div class="road-panel"><span class="crash-kicker">STARTING POINT</span><h2>Choose Your Road</h2><p>Every road has its own rhythm.</p><div class="road-grid" id="road-grid"></div><button id="road-done" class="primary-button">START RIDE <span aria-hidden="true">↗</span></button><button id="road-back" class="text-button">BACK</button></div>
-      </div>
-      <div class="leaderboard-screen" id="leaderboard-screen" hidden>
-        <section class="leaderboard-panel" aria-labelledby="leaderboard-title">
-          <span class="crash-kicker">LOCAL RIDERS</span>
-          <h2 id="leaderboard-title">Leaderboard</h2>
-          <div class="leaderboard-tabs" role="tablist" aria-label="Leaderboard period">
-            <button class="leaderboard-tab" data-period="today" role="tab" aria-selected="false">TODAY</button>
-            <button class="leaderboard-tab" data-period="week" role="tab" aria-selected="false">THIS WEEK</button>
-            <button class="leaderboard-tab is-selected" data-period="all-time" role="tab" aria-selected="true">ALL TIME</button>
+        <div class="start-panel">
+          <span class="crash-kicker">UYO, AKWA IBOM</span>
+          <h1>Kekenapepe</h1>
+          <p class="start-tagline">No wahala, make we run!</p>
+          <div class="start-meta">
+            <div>
+              <span>Fuel</span>
+              <strong>100%</strong>
+            </div>
+            <div>
+              <span>Horn</span>
+              <strong>Ready</strong>
+            </div>
           </div>
-          <ol id="leaderboard-list" aria-live="polite"></ol>
-          <button id="leaderboard-done" class="primary-button">DONE</button>
-        </section>
+          <button id="start-button" class="primary-button">START RUN <span aria-hidden="true">↗</span></button>
+          <div class="leaderboard-box">
+            <h2>Top riders</h2>
+            <ol id="leaderboard-list"></ol>
+          </div>
+        </div>
       </div>
       <div class="crash-screen" id="crash-screen" hidden>
         <span class="crash-kicker">AH! E DON HAPPEN</span>
@@ -99,17 +93,14 @@
             <button id="save-score-button" class="secondary-button">SAVE SCORE</button>
             <button id="share-x-button" class="secondary-button">SHARE X</button>
             <button id="share-copy-button" class="secondary-button">COPY RESULT</button>
-            <a id="download-card-button" class="secondary-button" download="kekenapepe-run.png">DOWNLOAD CARD</a>
           </div>
         </div>
         <div class="crash-actions">
           <button id="revive-button" class="secondary-button" hidden>REVIVE <span aria-hidden="true">+1</span></button>
           <button id="restart-button" class="primary-button">RIDE AGAIN <span aria-hidden="true">↗</span></button>
-          <button id="share-button" class="secondary-button">SHARE RUN <span aria-hidden="true">↗</span></button>
-          <button id="crash-leaders-button" class="secondary-button">LEADERBOARD</button>
         </div>
       </div>
-      <div class="loading-screen" id="loading-screen" aria-live="polite"><strong>KEKENAPEPE</strong><span id="loading-copy">LOADING UYO AYAYA...</span><i></i></div>
+      <div class="loading-screen" id="loading-screen" aria-live="polite">Warming up your keke<span>...</span></div>
     </main>
     <script type="module" src="/src/main.js"></script>
   </body>
