@@ -78,6 +78,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .control-hint { display: flex; align-items: center; gap: 5px; padding-bottom: 8px; color: #445d4d; }
 .swipe-icon { width: 29px; height: 29px; display: grid; place-items: center; border: 1px solid rgba(37,71,48,.23); border-radius: 50%; background: rgba(249,255,247,.56); font: 700 21px 'DM Sans',sans-serif; }
 .control-hint small { margin-left: 4px; font-size: 8px; font-weight: 800; letter-spacing: 1px; }
+.osm-credit { position: absolute; left: 0; bottom: -17px; color: rgba(44,73,55,.72); font-size: 7px; font-weight: 700; text-decoration: none; }
+.osm-credit:hover { color: #1e7552; text-decoration: underline; }
 .pedal-controls { display: flex; gap: 9px; }
 .control-button { border: 1px solid rgba(37,71,48,.17); color: #244636; background: rgba(249,255,247,.78); box-shadow: 0 5px 17px rgba(30,61,44,.11); cursor: pointer; touch-action: none; transition: transform .12s,background .12s; }
 .control-button:active,.control-button.pressed { transform: translateY(2px); background: var(--lime); }
@@ -126,6 +128,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .ride-icon { width: 23px; height: 23px; }
   .controls { left: 17px; right: 17px; bottom: max(17px,env(safe-area-inset-bottom)); }
   .control-hint { gap: 3px; }
+  .osm-credit { bottom: -13px; font-size: 6px; }
   .swipe-icon { width: 24px; height: 24px; font-size: 17px; }
   .control-hint small { font-size: 7px; letter-spacing: .6px; }
   .pedal-controls { gap: 6px; }

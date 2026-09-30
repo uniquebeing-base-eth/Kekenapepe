@@ -38,15 +38,15 @@ const colors = {
 };
 const mats = Object.fromEntries(Object.entries(colors).map(([key, color]) => [key, new THREE.MeshStandardMaterial({ color, roughness: 0.92 })]));
 const roadMaterial = new THREE.MeshStandardMaterial({ color: colors.road, roughness: 0.94 });
-const road = new THREE.Mesh(new THREE.PlaneGeometry(11.4, 165), roadMaterial);
+const road = new THREE.Mesh(new THREE.PlaneGeometry(11.4, 820), roadMaterial);
 road.rotation.x = -Math.PI / 2;
-road.position.set(0, -0.07, -58);
+road.position.set(0, -0.07, -400);
 road.receiveShadow = true;
 scene.add(road);
 
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(220, 220), new THREE.MeshStandardMaterial({ color: '#8fc894', roughness: 1 }));
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(380, 900), new THREE.MeshStandardMaterial({ color: '#8fc894', roughness: 1 }));
 ground.rotation.x = -Math.PI / 2;
-ground.position.set(0, -0.16, -70);
+ground.position.set(0, -0.16, -420);
 ground.receiveShadow = true;
 scene.add(ground);
 
@@ -63,8 +63,8 @@ for (const x of [-laneWidth / 2, laneWidth / 2]) {
   }
 }
 for (const x of [-5.58, 5.58]) {
-  const edge = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.025, 165), new THREE.MeshStandardMaterial({ color: '#f2ead0' }));
-  edge.position.set(x, -0.01, -58);
+  const edge = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.025, 820), new THREE.MeshStandardMaterial({ color: '#f2ead0' }));
+  edge.position.set(x, -0.01, -400);
   scene.add(edge);
 }
 
@@ -146,6 +146,212 @@ for (let i = 0; i < 30; i += 1) {
     }
   }
 }
+
+const cityLandmarks = [];
+
+function addCityLandmark(group, x, z, osmCoordinate = null) {
+  group.position.set(x, 0, z);
+  group.userData.startZ = z;
+  group.userData.osmCoordinate = osmCoordinate;
+  scene.add(group);
+  cityLandmarks.push(group);
+  return group;
+}
+
+function createSignMaterial(title, subtitle, background = '#1d6547') {
+  const canvas = document.createElement('canvas');
+  canvas.width = 640;
+  canvas.height = 180;
+  const context = canvas.getContext('2d');
+  context.fillStyle = background;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = '#f4f0d6';
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  let fontSize = 48;
+  context.font = `800 ${fontSize}px Arial`;
+  while (context.measureText(title).width > 598 && fontSize > 24) {
+    fontSize -= 2;
+    context.font = `800 ${fontSize}px Arial`;
+  }
+  context.fillText(title, 320, 62);
+  context.fillStyle = '#d4e5b5';
+  context.font = '700 24px Arial';
+  context.fillText(subtitle, 320, 132);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return new THREE.MeshBasicMaterial({ map: texture });
+}
+
+function createRoadSign(title, subtitle, x, z, osmCoordinate = null) {
+  const group = new THREE.Group();
+  const postMaterial = new THREE.MeshStandardMaterial({ color: '#64705e', roughness: 0.9 });
+  const boardMaterial = new THREE.MeshStandardMaterial({ color: '#1c543e', roughness: 0.8 });
+  for (const postX of [-1.3, 1.3]) makeBox(group, 0.12, 2.9, 0.12, postMaterial, [postX, 1.45, 0]);
+  makeBox(group, 3.15, 0.86, 0.18, boardMaterial, [0, 3.04, 0]);
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 0.72), createSignMaterial(title, subtitle));
+  face.position.set(0, 3.04, 0.101);
+  group.add(face);
+  return addCityLandmark(group, x, z, osmCoordinate);
+}
+
+function createIntersection(z) {
+  const group = new THREE.Group();
+  const crossStreet = new THREE.Mesh(new THREE.BoxGeometry(40, 0.055, 5), roadMaterial);
+  crossStreet.position.set(0, -0.035, 0);
+  crossStreet.receiveShadow = true;
+  group.add(crossStreet);
+  const paint = new THREE.MeshStandardMaterial({ color: '#f5e9cb', roughness: 0.85 });
+  for (let stripe = -2; stripe <= 2; stripe += 1) {
+    makeBox(group, 10.3, 0.025, 0.25, paint, [0, -0.003, stripe * 0.48]);
+  }
+  return addCityLandmark(group, 0, z);
+}
+
+function createRoundabout(z, osmCoordinate) {
+  const group = new THREE.Group();
+  const roundaboutX = 18;
+  const approach = new THREE.Mesh(new THREE.BoxGeometry(18, 0.06, 3.6), roadMaterial);
+  approach.position.set(9, -0.035, 0);
+  approach.receiveShadow = true;
+  group.add(approach);
+  for (const branchZ of [-7.1, 7.1]) {
+    const branch = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.06, 7), roadMaterial);
+    branch.position.set(roundaboutX, -0.035, branchZ);
+    branch.receiveShadow = true;
+    group.add(branch);
+  }
+  const ringMaterial = new THREE.MeshStandardMaterial({ color: '#464e49', roughness: 0.96, side: THREE.DoubleSide });
+  const ring = new THREE.Mesh(new THREE.RingGeometry(3.05, 5.1, 40), ringMaterial);
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.set(roundaboutX, -0.005, 0);
+  ring.receiveShadow = true;
+  group.add(ring);
+  const island = new THREE.Mesh(new THREE.CylinderGeometry(3.03, 3.35, 0.32, 32), new THREE.MeshStandardMaterial({ color: '#83aa65', roughness: 1 }));
+  island.position.set(roundaboutX, 0.1, 0);
+  island.castShadow = true;
+  island.receiveShadow = true;
+  group.add(island);
+  const plinth = new THREE.Mesh(new THREE.CylinderGeometry(0.82, 1.08, 0.55, 8), new THREE.MeshStandardMaterial({ color: '#ead9ae', roughness: 0.82 }));
+  plinth.position.set(roundaboutX, 0.49, 0);
+  group.add(plinth);
+  const marker = new THREE.Mesh(new THREE.ConeGeometry(0.58, 2.25, 5), new THREE.MeshStandardMaterial({ color: '#e6a94b', roughness: 0.7, flatShading: true }));
+  marker.position.set(roundaboutX, 1.87, 0);
+  marker.castShadow = true;
+  group.add(marker);
+  for (let i = 0; i < 6; i += 1) {
+    const angle = i / 6 * Math.PI * 2;
+    const shrub = new THREE.Mesh(new THREE.DodecahedronGeometry(0.46, 0), new THREE.MeshStandardMaterial({ color: i % 2 ? '#4b8454' : '#629256', roughness: 1, flatShading: true }));
+    shrub.position.set(roundaboutX + Math.cos(angle) * 2.25, 0.55, Math.sin(angle) * 2.25);
+    shrub.castShadow = true;
+    group.add(shrub);
+  }
+  return addCityLandmark(group, 0, z, osmCoordinate);
+}
+
+function createPlazaLandmark(z) {
+  const group = new THREE.Group();
+  const stone = new THREE.MeshStandardMaterial({ color: '#e9d4a2', roughness: 0.82, flatShading: true });
+  const accent = new THREE.MeshStandardMaterial({ color: '#cf6546', roughness: 0.76, flatShading: true });
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(4.2, 4.45, 0.42, 24), stone);
+  base.position.y = 0.22;
+  group.add(base);
+  const terrace = new THREE.Mesh(new THREE.CylinderGeometry(3.35, 3.8, 0.25, 24), new THREE.MeshStandardMaterial({ color: '#d3bb84', roughness: 0.9 }));
+  terrace.position.y = 0.55;
+  group.add(terrace);
+  const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.78, 7.1, 6), new THREE.MeshStandardMaterial({ color: '#3f7654', roughness: 0.72, flatShading: true }));
+  tower.position.y = 4.2;
+  tower.castShadow = true;
+  group.add(tower);
+  const cap = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.35, 6), accent);
+  cap.position.y = 8.38;
+  cap.castShadow = true;
+  group.add(cap);
+  for (const side of [-1, 1]) {
+    const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.48, 2.25, 0.48), accent);
+    pillar.position.set(side * 1.95, 1.48, 0.5);
+    pillar.castShadow = true;
+    group.add(pillar);
+  }
+  const sign = makeBox(group, 5.5, 0.92, 0.2, new THREE.MeshStandardMaterial({ color: '#176346' }), [0, 2.35, 4.25]);
+  sign.castShadow = false;
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(5.25, 0.72), createSignMaterial('IBOM PLAZA', 'UYO CITY CENTRE'));
+  face.position.set(0, 2.35, 4.36);
+  group.add(face);
+  return addCityLandmark(group, -13.5, z);
+}
+
+function createUniversityGate(z) {
+  const group = new THREE.Group();
+  const cream = new THREE.MeshStandardMaterial({ color: '#ead7b2', roughness: 0.86 });
+  const maroon = new THREE.MeshStandardMaterial({ color: '#7b3440', roughness: 0.8 });
+  for (const x of [-4.3, 4.3]) {
+    makeBox(group, 0.82, 4.5, 0.95, cream, [x, 2.25, 0]);
+    makeBox(group, 1.12, 0.35, 1.22, maroon, [x, 4.68, 0]);
+  }
+  makeBox(group, 9.3, 0.52, 0.8, maroon, [0, 4.25, 0]);
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(8.8, 0.42), createSignMaterial('UNIVERSITY OF UYO', 'AKWA IBOM STATE', '#7b3440'));
+  face.position.set(0, 4.25, 0.43);
+  group.add(face);
+  for (const x of [-2.6, 0, 2.6]) {
+    const rail = makeBox(group, 0.09, 1.8, 0.12, maroon, [x, 1.2, 0]);
+    rail.castShadow = false;
+  }
+  return addCityLandmark(group, 14, z, [5.04195, 7.92497]);
+}
+
+function createSecretariat(z) {
+  const group = new THREE.Group();
+  const concrete = new THREE.MeshStandardMaterial({ color: '#e8d8b5', roughness: 0.9 });
+  const green = new THREE.MeshStandardMaterial({ color: '#477b5a', roughness: 0.84 });
+  makeBox(group, 12.5, 5.4, 6.2, concrete, [0, 2.7, 0]);
+  makeBox(group, 12.9, 0.42, 6.55, green, [0, 4.55, 0]);
+  makeBox(group, 12.8, 0.18, 6.5, green, [0, 1.25, 3.12]);
+  for (let column = -5; column <= 5; column += 2) {
+    makeBox(group, 0.16, 3.7, 0.18, concrete, [column, 2.85, 3.18]);
+    makeBox(group, 0.88, 0.84, 0.06, new THREE.MeshStandardMaterial({ color: '#83b8a3' }), [column, 3.4, 3.2], false);
+  }
+  makeBox(group, 8.2, 0.92, 0.2, green, [0, 5.65, 2.9]);
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(7.9, 0.72), createSignMaterial('AKWA IBOM SECRETARIAT', 'IDONGESIT NKANGA COMPLEX'));
+  face.position.set(0, 5.65, 3.01);
+  group.add(face);
+  return addCityLandmark(group, -17, z, [5.02309, 7.90377]);
+}
+
+function createTownshipStadium(z) {
+  const group = new THREE.Group();
+  const standMaterial = new THREE.MeshStandardMaterial({ color: '#d9c292', roughness: 0.94, side: THREE.DoubleSide });
+  const shell = new THREE.Mesh(new THREE.CylinderGeometry(4.2, 5.1, 2.6, 28, 1, true), standMaterial);
+  shell.position.y = 1.4;
+  shell.castShadow = true;
+  group.add(shell);
+  for (let tier = 0; tier < 4; tier += 1) {
+    const seating = new THREE.Mesh(new THREE.RingGeometry(4.4 + tier * 0.14, 4.75 + tier * 0.14, 28), new THREE.MeshStandardMaterial({ color: tier % 2 ? '#c7684e' : '#417b58', roughness: 0.9, side: THREE.DoubleSide }));
+    seating.rotation.x = -Math.PI / 2;
+    seating.position.y = 1.05 + tier * 0.44;
+    group.add(seating);
+  }
+  makeBox(group, 3.2, 0.25, 1.2, new THREE.MeshStandardMaterial({ color: '#74a76d' }), [0, 0.35, 0]);
+  for (const x of [-5.1, 5.1]) {
+    makeBox(group, 0.18, 7.8, 0.18, new THREE.MeshStandardMaterial({ color: '#77796d' }), [x, 3.9, -1.2]);
+    const lamp = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.35, 0.3), new THREE.MeshStandardMaterial({ color: '#f4e7bb', emissive: '#76633e', emissiveIntensity: 0.18 }));
+    lamp.position.set(x, 7.85, -1.2);
+    group.add(lamp);
+  }
+  return addCityLandmark(group, 15, z, [5.01916, 7.92564]);
+}
+
+createRoadSign('IKOT EKPENE ROAD', 'UYO CITY CENTRE', -6.8, -24, [5.0389, 7.9095]);
+createIntersection(-52);
+createRoadSign('AKA ROAD', 'CITY CENTRE', 6.8, -77, [5.03335, 7.92875]);
+createRoundabout(-122, [5.03279, 7.93103]);
+createRoadSign('ORON ROAD / NWANIBA', 'ROUNDABOUT AHEAD', -6.8, -112, [5.03279, 7.93103]);
+createUniversityGate(-180);
+createPlazaLandmark(-238);
+createRoadSign('WELLINGTON BASSEY WAY', 'BARRACKS ROAD', -6.8, -298, [5.03702, 7.93128]);
+createSecretariat(-350);
+createRoadSign('ABAK ROAD', 'WESTERN UYO', 6.8, -405, [5.02991, 7.91506]);
+createTownshipStadium(-462);
 
 function createKeke(primary = false) {
   const group = new THREE.Group();
@@ -321,7 +527,7 @@ const ui = {
   crashMessage: document.querySelector('#crash-message'), finalScore: document.querySelector('#final-score'), loading: document.querySelector('#loading-screen'),
 };
 
-const streets = ['Aka Road', 'Ikot Ekpene Road', 'Abak Road', 'Oron Road', 'Wellington Bassey Way', 'Nwaniba Road'];
+const streets = ['Abak Road', 'Ikot Ekpene Road', 'Aka Road', 'Wellington Bassey Way', 'Oron Road', 'Nwaniba Road'];
 const crashMessages = [
   'Even the keke needs a breather.', 'My brother, the road no be yours alone!', 'This keke don collect.', 'Omo, that one pain small.',
   'Conductor! Make we try again.', 'No worry. Uyo traffic gets everybody.',
@@ -329,7 +535,7 @@ const crashMessages = [
 const state = {
   lane: 1, lanePosition: 0, speed: 48, score: 0, coins: 0, distance: 0, time: 0,
   active: true, braking: false, boosting: false, passengers: 0, dropDistance: null,
-  nextPickup: 1.5, streetIndex: 0, toastTimer: null, missionStage: 0, roadTime: 0,
+  nextPickup: 1.5, streetIndex: 1, toastTimer: null, missionStage: 0, roadTime: 0,
 };
 let bestScore = Number(localStorage.getItem('kekenapepe-best') || 0);
 ui.best.textContent = String(bestScore).padStart(6, '0');
@@ -378,7 +584,7 @@ function resetRun() {
   state.passengers = 0;
   state.dropDistance = null;
   state.nextPickup = 1.5;
-  state.streetIndex = 0;
+  state.streetIndex = 1;
   state.missionStage = 0;
   state.roadTime = 0;
   if (engineGain && soundEnabled) engineGain.gain.setTargetAtTime(0.035, audioContext.currentTime, 0.08);
@@ -391,6 +597,7 @@ function resetRun() {
     item.mesh.position.x = lanes[item.lane];
     item.collected = false;
   }
+  for (const landmark of cityLandmarks) landmark.position.z = landmark.userData.startZ;
   for (const [index, item] of pickups.entries()) {
     item.taken = false;
     item.kind = index % 5 === 4 ? 'passenger' : 'coin';
@@ -399,6 +606,7 @@ function resetRun() {
     item.mesh.visible = true;
   }
   ui.crash.hidden = true;
+  ui.street.textContent = streets[1];
   ui.mission.textContent = 'Reach Ibom Plaza';
   ui.progress.style.width = '0%';
   ui.detail.textContent = '0 / 400 m';
@@ -525,6 +733,10 @@ function animate(now) {
       object.position.z += forward;
       if (object.position.z > 18) object.position.z -= 30 * 7.1;
     }
+    for (const landmark of cityLandmarks) {
+      landmark.position.z += forward;
+      if (landmark.position.z > 18) landmark.position.z -= 560;
+    }
 
     for (const item of traffic) {
       item.mesh.position.z += (forward - item.speed * delta);
@@ -583,7 +795,7 @@ function animate(now) {
       state.score += 150;
       showToast('Drop-off complete! +150 points');
     }
-    const streetIndex = Math.floor(state.distance / 180) % streets.length;
+    const streetIndex = (Math.floor(state.distance / 180) + 1) % streets.length;
     if (streetIndex !== state.streetIndex) {
       state.streetIndex = streetIndex;
       ui.street.textContent = streets[streetIndex];
