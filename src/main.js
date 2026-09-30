@@ -185,6 +185,7 @@ for (let i = 0; i < 50; i += 1) {
 const cityLandmarks = [];
 const trafficSignals = [];
 const policeCheckpoints = [];
+const fuelStations = [];
 
 function addCityLandmark(group, x, z, osmCoordinate = null) {
   group.position.set(x + roadCurve(z), 0, z);
@@ -280,6 +281,28 @@ function createStreetlight(x, z) {
   lamp.position.set(x > 0 ? -1.55 : 1.55, 6.28, 0);
   group.add(lamp);
   return addCityLandmark(group, x, z);
+}
+
+function createFuelStation(z) {
+  const group = new THREE.Group();
+  const canopy = new THREE.MeshStandardMaterial({ color: '#e8dfc4', roughness: 0.82 });
+  const green = new THREE.MeshStandardMaterial({ color: '#267751', roughness: 0.7 });
+  const red = new THREE.MeshStandardMaterial({ color: '#d85f45', roughness: 0.72 });
+  for (const x of [-2.4, 2.4]) makeBox(group, 0.18, 3.8, 0.18, green, [x, 1.9, 0]);
+  for (const x of [-2.1, 2.1]) makeBox(group, 0.14, 1.5, 0.14, green, [x, 4.55, 0]);
+  makeBox(group, 6.2, 0.28, 3.6, canopy, [0, 3.85, 0]);
+  makeBox(group, 6.25, 0.18, 3.65, green, [0, 3.66, 0]);
+  for (const x of [-1.2, 1.2]) {
+    makeBox(group, 0.74, 1.25, 0.55, red, [x, 0.72, 1.2]);
+    makeBox(group, 0.48, 0.3, 0.08, canopy, [x, 1.18, 1.49]);
+    makeBox(group, 0.08, 0.68, 0.08, green, [x + 0.3, 1.36, 1.24]);
+  }
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 0.88), createSignMaterial('UYO FUEL', 'PAY WITH COINS · ₦50 EACH', '#ae4d37'));
+  sign.position.set(0, 4.55, 1.84);
+  group.add(sign);
+  const station = addCityLandmark(group, 8.2, z);
+  fuelStations.push(station);
+  return station;
 }
 
 function createPerson(parent, x, z, shirtColor, trousersColor, role = 'civilian') {
@@ -378,6 +401,8 @@ function createPoliceCheckpoint(z) {
   }
   const checkpoint = addCityLandmark(group, 0, z, [5.02309, 7.90377]);
   checkpoint.userData.barrierOffset = 4.2;
+  checkpoint.userData.passed = false;
+  checkpoint.userData.warned = false;
   policeCheckpoints.push(checkpoint);
   return checkpoint;
 }
@@ -592,6 +617,10 @@ createPoliceCheckpoint(-850);
 createRoadSign('IBB AVENUE', 'SOUTH UYO', -6.8, -795, [5.01834, 7.91132]);
 createRoadSign('ITAM ROAD', 'EASTERN UYO', 6.8, -875, [5.05399, 7.89907]);
 createRoadSign('NELSON MANDELA ROAD', 'IKOT EKPENE DISTRICT', -6.8, -960, [5.04552, 7.91508]);
+createFuelStation(-102);
+createFuelStation(-402);
+createFuelStation(-702);
+createFuelStation(-1002);
 
 function createKeke(primary = false) {
   const group = new THREE.Group();
@@ -734,9 +763,14 @@ function spawnTraffic(z = -92) {
 for (let index = 0; index < 10; index += 1) spawnTraffic(-48 - index * 35);
 
 const pickups = [];
+function pickupRoadX(kind, lane, z) {
+  const offset = kind === 'passenger' ? lane === 0 ? -6.5 : 6.5 : lanes[lane];
+  return roadCurve(z) + offset;
+}
+
 function createPickup(kind, lane, z) {
   const group = new THREE.Group();
-  group.position.set(roadCurve(z) + lanes[lane], 0, z);
+  group.position.set(pickupRoadX(kind, lane, z), 0, z);
   if (kind === 'coin') {
     const coin = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.12, 10), new THREE.MeshStandardMaterial({ color: '#ffd64b', metalness: 0.38, roughness: 0.28 }));
     coin.rotation.x = Math.PI / 2;
@@ -744,16 +778,21 @@ function createPickup(kind, lane, z) {
     coin.castShadow = true;
     group.add(coin);
   } else {
-    const post = makeBox(group, 0.12, 1.35, 0.12, new THREE.MeshStandardMaterial({ color: '#477c57' }), [0, 0.68, 0]);
-    post.castShadow = false;
-    makeBox(group, 0.82, 0.48, 0.1, new THREE.MeshStandardMaterial({ color: '#f1e5c5' }), [0, 1.45, 0]);
-    makeBox(group, 0.64, 0.09, 0.12, new THREE.MeshStandardMaterial({ color: '#e76f4c' }), [0, 1.51, 0.07]);
-    const letter = new THREE.Mesh(new THREE.PlaneGeometry(0.46, 0.22), new THREE.MeshBasicMaterial({ color: '#335b42' }));
-    letter.position.set(0, 1.46, 0.065);
-    group.add(letter);
+    const green = new THREE.MeshStandardMaterial({ color: '#276947', roughness: 0.82 });
+    const metal = new THREE.MeshStandardMaterial({ color: '#46544a', roughness: 0.78 });
+    const seat = new THREE.MeshStandardMaterial({ color: '#c76a47', roughness: 0.8 });
+    makeBox(group, 0.13, 2.55, 0.13, metal, [-0.7, 1.28, 0]);
+    makeBox(group, 0.13, 2.55, 0.13, metal, [0.7, 1.28, 0]);
+    makeBox(group, 1.65, 0.86, 0.15, green, [0, 2.35, 0]);
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.53, 0.72), createSignMaterial('BUS STOP', 'PASSENGER PICKUP', '#276947'));
+    sign.position.set(0, 2.35, 0.081);
+    group.add(sign);
+    makeBox(group, 1.6, 0.12, 0.48, seat, [0, 0.55, 0.48]);
+    for (const x of [-0.62, 0.62]) makeBox(group, 0.1, 0.48, 0.1, metal, [x, 0.28, 0.48]);
+    group.userData.waitingPerson = createPerson(group, 1.05, 0.38, '#e1a62f', '#344a3b');
   }
   scene.add(group);
-  pickups.push({ mesh: group, kind, lane, taken: false, phase: random() * Math.PI * 2 });
+  pickups.push({ mesh: group, kind, lane, taken: false, warned: false, passed: false, phase: random() * Math.PI * 2 });
 }
 for (let i = 0; i < 18; i += 1) createPickup(i % 5 === 4 ? 'passenger' : 'coin', Math.floor(random() * 3), -16 - i * 12.5);
 
@@ -768,6 +807,16 @@ const ui = {
   startScreen: document.querySelector('#start-screen'), startButton: document.querySelector('#start-button'), reviveButton: document.querySelector('#revive-button'),
   saveName: document.querySelector('#save-name'), saveScoreButton: document.querySelector('#save-score-button'), shareXButton: document.querySelector('#share-x-button'),
   shareCopyButton: document.querySelector('#share-copy-button'), leaderboard: document.querySelector('#leaderboard-list'),
+  impactFlash: document.querySelector('#impact-flash'),
+  startStreet: document.querySelector('#start-street'), localDate: document.querySelector('#local-date'), localTime: document.querySelector('#local-time'),
+  startBestDistance: document.querySelector('#start-best-distance'), startTotalRuns: document.querySelector('#start-total-runs'),
+  downloadCardButton: document.querySelector('#download-card-button'), refuel: document.querySelector('#refuel'),
+  refuelLabel: document.querySelector('#refuel span:last-child'),
+  refuelFive: document.querySelector('#refuel-five'), passengerAction: document.querySelector('#passenger-action'),
+  resultsLeaderboard: document.querySelector('#results-leaderboard'),
+  streetTabs: document.querySelector('#street-tabs'), leaderboardScreen: document.querySelector('#leaderboard-screen'),
+  leaderboardEmpty: document.querySelector('#leaderboard-empty'), openLeaderboard: document.querySelector('#open-leaderboard'),
+  closeLeaderboard: document.querySelector('#close-leaderboard'), leaderboardTabs: document.querySelector('.leaderboard-tabs'),
 };
 
 const streets = ['Abak Road', 'Ikot Ekpene Road', 'Aka Road', 'Wellington Bassey Way', 'Atiku Abubakar Avenue', 'Oron Road', 'Nwaniba Road', 'Ikpa Road', 'IBB Avenue', 'Itam Road', 'Nelson Mandela Road'];
@@ -775,14 +824,27 @@ const coinPointValue = 50;
 const leaderboardKey = 'kekenapepe-leaderboard';
 const crashMessages = [
   'Even the keke needs a breather.', 'My brother, the road no be yours alone!', 'This keke don collect.', 'Omo, that one pain small.',
-  'Conductor! Make we try again.', 'No worry. Uyo traffic gets everybody.',
+  'Conductor! Make we try again.', 'No worry. Uyo traffic gets everybody.', 'Omo, your keke don lie down!',
+  'Wahala don jam bumper. Even the keke shock.', 'Abeg, who dash am wings? Na road be this!',
 ];
 const state = {
   lane: 1, lanePosition: 0, speed: 48, score: 0, coins: 0, distance: 0, time: 0,
   active: false, braking: false, boosting: false, passengers: 0, dropDistance: null,
   nextPickup: 1.5, streetIndex: 1, toastTimer: null, missionStage: 0, roadTime: 0,
-  fuel: 100, hornCooldown: 0, profileName: 'Uyo Driver', revives: 1,
+  fuel: 100, fuelStopped: 0, hornCooldown: 0, profileName: 'Uyo Driver', impactTime: 0,
+  startStreetIndex: 1, runRecorded: false, runId: null, nearStation: false, deliveries: 0, endlessMission: null, invincibility: 0,
+  dropPrompted: false, passengerPickup: null, missedPassengers: 0, crashTimer: null,
 };
+const debris = [];
+const debrisMaterial = new THREE.MeshStandardMaterial({ color: '#f6a14b', roughness: 0.72, flatShading: true });
+const debrisGeometry = new THREE.TetrahedronGeometry(0.13, 0);
+for (let index = 0; index < 12; index += 1) {
+  const piece = new THREE.Mesh(debrisGeometry, debrisMaterial);
+  piece.visible = false;
+  piece.castShadow = true;
+  scene.add(piece);
+  debris.push({ mesh: piece, velocity: new THREE.Vector3(), spin: new THREE.Vector3() });
+}
 let bestScore = Number(localStorage.getItem('kekenapepe-best') || 0);
 ui.best.textContent = String(bestScore).padStart(6, '0');
 
@@ -795,24 +857,130 @@ function getLeaderboard() {
 }
 
 function renderLeaderboard() {
-  const entries = getLeaderboard();
+  const periods = { daily: 24 * 60 * 60 * 1000, weekly: 7 * 24 * 60 * 60 * 1000, monthly: 30 * 24 * 60 * 60 * 1000 };
+  const periodStart = Date.now() - periods[leaderboardPeriod];
+  const entries = getLeaderboard()
+    .filter((entry) => entry.savedByUser === true)
+    .filter((entry) => Number(entry.at) >= periodStart)
+    .sort((first, second) => second.score - first.score || second.distance - first.distance);
   if (!ui.leaderboard) return;
-  ui.leaderboard.innerHTML = entries.length
-    ? entries.slice(0, 5).map((entry, index) => `<li><span>${index + 1}. ${entry.name}</span><strong>${entry.score}</strong></li>`).join('')
-    : '<li class="empty-entry"><span>1. First rider</span><strong>0</strong></li>';
+  ui.leaderboard.replaceChildren();
+  ui.leaderboardEmpty.hidden = entries.length > 0;
+  entries.slice(0, 20).forEach((entry, index) => {
+    const row = document.createElement('li');
+    const rank = document.createElement('span');
+    const name = document.createElement('span');
+    const score = document.createElement('strong');
+    rank.className = 'leaderboard-rank';
+    rank.textContent = String(index + 1).padStart(2, '0');
+    name.textContent = entry.name;
+    score.textContent = String(entry.score);
+    row.append(rank, name, score);
+    ui.leaderboard.append(row);
+  });
 }
 
-function saveLeaderboardEntry(score, name, distance) {
+function renderSavedStats() {
+  try {
+    const stats = JSON.parse(localStorage.getItem('kekenapepe-stats') || '{}');
+    ui.startBestDistance.textContent = `${Number(stats.bestDistance || 0)} m`;
+    ui.startTotalRuns.textContent = String(Number(stats.totalRuns || 0));
+  } catch {
+    ui.startBestDistance.textContent = '0 m';
+    ui.startTotalRuns.textContent = '0';
+  }
+}
+
+function recordRun() {
+  let stats = {};
+  try { stats = JSON.parse(localStorage.getItem('kekenapepe-stats') || '{}'); } catch {}
+  stats.totalRuns = Number(stats.totalRuns || 0) + 1;
+  stats.bestDistance = Math.max(Number(stats.bestDistance || 0), Math.floor(state.distance));
+  stats.totalCoins = Number(stats.totalCoins || 0) + state.coins;
+  localStorage.setItem('kekenapepe-stats', JSON.stringify(stats));
+  const savedName = localStorage.getItem('kekenapepe-name');
+  if (savedName) recordNamedRun(savedName);
+  renderSavedStats();
+}
+
+function recordNamedRun(name) {
+  const normalizedName = name.trim().toLocaleLowerCase();
+  if (!normalizedName || !state.runId) return;
+  let riders = {};
+  try { riders = JSON.parse(localStorage.getItem('kekenapepe-rider-stats') || '{}'); } catch {}
+  const stats = riders[normalizedName] || { name: name.trim(), runs: 0, totalCoins: 0, bestScore: 0, bestDistance: 0, runIds: [] };
+  if (stats.runIds.includes(state.runId)) return;
+  stats.name = name.trim();
+  stats.runs += 1;
+  stats.totalCoins += state.coins;
+  stats.bestScore = Math.max(stats.bestScore, Math.floor(state.score));
+  stats.bestDistance = Math.max(stats.bestDistance, Math.floor(state.distance));
+  stats.runIds.push(state.runId);
+  stats.runIds = stats.runIds.slice(-200);
+  riders[normalizedName] = stats;
+  localStorage.setItem('kekenapepe-rider-stats', JSON.stringify(riders));
+}
+
+function saveLeaderboardEntry(score, name, distance, runId = null) {
   const entries = getLeaderboard();
   const cleanedName = (name || 'Rider').trim().slice(0, 14) || 'Rider';
-  entries.push({ name: cleanedName, score, distance, at: Date.now() });
+  const normalizedName = cleanedName.toLocaleLowerCase();
+  const matchingEntries = entries.filter((savedEntry) => savedEntry.savedByUser === true
+    && savedEntry.name.trim().toLocaleLowerCase() === normalizedName);
+  const previous = matchingEntries.sort((first, second) => second.score - first.score || second.distance - first.distance)[0] || null;
+  for (let index = entries.length - 1; index >= 0; index -= 1) {
+    if (entries[index].savedByUser === true && entries[index].name.trim().toLocaleLowerCase() === normalizedName) entries.splice(index, 1);
+  }
+  const isNewBest = !previous || score > previous.score;
+  const entry = {
+    name: cleanedName,
+    score: Math.max(score, previous?.score || 0),
+    distance: isNewBest ? distance : previous.distance,
+    at: isNewBest ? Date.now() : previous.at,
+    runId: isNewBest ? runId : previous.runId,
+    savedByUser: true,
+  };
+  entries.push(entry);
   entries.sort((a, b) => b.score - a.score || b.distance - a.distance);
-  localStorage.setItem(leaderboardKey, JSON.stringify(entries.slice(0, 5)));
+  localStorage.setItem(leaderboardKey, JSON.stringify(entries.slice(0, 200)));
   renderLeaderboard();
 }
 
-function syncProfileName() {
-  const cleaned = (ui.saveName.value || localStorage.getItem('kekenapepe-name') || 'Rider').trim().slice(0, 14) || 'Rider';
+let leaderboardPeriod = 'daily';
+
+function renderStreetTabs() {
+  ui.streetTabs.replaceChildren();
+  for (const option of ui.startStreet.options) {
+    const tab = document.createElement('button');
+    tab.type = 'button';
+    tab.setAttribute('role', 'tab');
+    tab.setAttribute('aria-selected', String(option.selected));
+    tab.textContent = option.textContent;
+    tab.addEventListener('click', () => {
+      ui.startStreet.value = option.value;
+      ui.street.textContent = option.textContent;
+      renderStreetTabs();
+    });
+    ui.streetTabs.append(tab);
+  }
+}
+
+let leaderboardReturnFocus = null;
+
+function openLeaderboard(event) {
+  leaderboardReturnFocus = event.currentTarget;
+  ui.leaderboardScreen.hidden = false;
+  renderLeaderboard();
+  ui.closeLeaderboard.focus();
+}
+
+function closeLeaderboard() {
+  ui.leaderboardScreen.hidden = true;
+  leaderboardReturnFocus?.focus();
+}
+
+function syncProfileName(value = ui.saveName.value || localStorage.getItem('kekenapepe-name') || 'Rider') {
+  const cleaned = value.trim().slice(0, 14) || 'Rider';
   state.profileName = cleaned;
   ui.saveName.value = cleaned;
 }
@@ -822,6 +990,169 @@ function showToast(message) {
   ui.toast.classList.add('show');
   clearTimeout(state.toastTimer);
   state.toastTimer = setTimeout(() => ui.toast.classList.remove('show'), 1550);
+}
+
+function refuelAtStation() {
+  buyFuel(1);
+}
+
+function buyFuel(litres) {
+  if (!state.active) return;
+  const litresToAdd = Math.min(litres, Math.max(0, (100 - state.fuel) / 10));
+  if (litresToAdd <= 0) {
+    showToast('Tank full already, boss.');
+    return;
+  }
+  const coinsToSpend = Math.ceil(litresToAdd * 10 - 1e-8);
+  if (state.coins < coinsToSpend) {
+    showToast(`You need ₦${coinsToSpend * coinPointValue} for ${litresToAdd.toFixed(0)}L of fuel.`);
+    return;
+  }
+  state.coins -= coinsToSpend;
+  state.fuel = Math.min(100, state.fuel + coinsToSpend);
+  ui.coins.textContent = String(state.coins * coinPointValue);
+  ui.fuel.textContent = String(Math.round(state.fuel));
+  ui.fuelMeter.style.width = `${state.fuel}%`;
+  showToast(`Bought ${coinsToSpend / 10}L for ₦${coinsToSpend * coinPointValue}. Safe journey!`);
+  if (soundEnabled) playChime();
+}
+
+function completePassengerDropoff() {
+  if (!state.active || !state.passengers) return;
+  if (state.speed > 5) {
+    showToast('Slow to a stop before your passenger gets out.');
+    return;
+  }
+  state.passengers = 0;
+  state.dropDistance = null;
+  state.dropPrompted = false;
+  state.passengerPickup = null;
+  state.deliveries += 1;
+  state.score += 150;
+  ui.passengers.textContent = '0';
+  ui.passengerTitle.textContent = 'No passenger';
+  ui.passengerDetail.textContent = 'Look out for a pickup';
+  ui.passengerAction.hidden = true;
+  showToast('Passenger dropped off safe! +150 points.');
+}
+
+function boardPassenger(pickup) {
+  if (!state.active || state.passengers || !pickup || state.speed > 5) return;
+  pickup.taken = true;
+  pickup.mesh.visible = false;
+  state.passengerPickup = null;
+  state.passengers = 1;
+  state.dropDistance = state.distance + 160;
+  state.dropPrompted = false;
+  ui.passengers.textContent = '1';
+  ui.passengerTitle.textContent = 'Passenger onboard';
+  ui.passengerDetail.textContent = 'Ride safe to the drop-off';
+  ui.passengerAction.textContent = 'DROP OFF';
+  showToast('Passenger don enter! Carry them safe to drop-off.');
+}
+
+function handlePassengerAction() {
+  if (state.passengers) completePassengerDropoff();
+  else boardPassenger(state.passengerPickup);
+}
+
+function updateLocalClock() {
+  const now = new Date();
+  ui.localDate.textContent = new Intl.DateTimeFormat('en-NG', {
+    weekday: 'short', day: 'numeric', month: 'short',
+  }).format(now);
+  ui.localTime.textContent = new Intl.DateTimeFormat('en-NG', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+  }).format(now);
+}
+
+function downloadResultCard() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1200;
+  canvas.height = 630;
+  const context = canvas.getContext('2d');
+  const backdrop = context.createLinearGradient(0, 0, 1200, 630);
+  backdrop.addColorStop(0, '#174b38');
+  backdrop.addColorStop(1, '#28785a');
+  context.fillStyle = backdrop;
+  context.fillRect(0, 0, 1200, 630);
+  context.fillStyle = 'rgba(214,239,67,.12)';
+  context.beginPath();
+  context.arc(1050, 70, 245, 0, Math.PI * 2);
+  context.fill();
+  context.fillStyle = '#d6ef43';
+  context.font = '800 26px Arial';
+  context.fillText('KEKENAPEPE  ·  UYO, AKWA IBOM', 76, 82);
+  context.fillStyle = '#fff9e8';
+  context.font = '800 68px Arial';
+  context.fillText(state.profileName || 'Uyo Driver', 76, 190);
+  context.fillStyle = '#d5e4d7';
+  context.font = '600 25px Arial';
+  context.fillText(`Rode ${Math.floor(state.distance)} m on ${ui.street.textContent}`, 80, 242);
+  context.fillStyle = '#d6ef43';
+  context.font = '800 112px Arial';
+  context.fillText(String(Math.floor(state.score)), 76, 390);
+  context.fillStyle = '#fff9e8';
+  context.font = '700 24px Arial';
+  context.fillText('POINTS', 82, 434);
+  context.fillStyle = '#fff9e8';
+  context.font = '700 30px Arial';
+  context.fillText(`${state.coins} coins  ·  ₦${state.coins * coinPointValue} earned`, 80, 520);
+  context.fillStyle = 'rgba(255,249,232,.72)';
+  context.font = '600 19px Arial';
+  context.fillText('NO WAHALA, MAKE WE RUN!', 80, 572);
+  const link = document.createElement('a');
+  link.download = 'kekenapepe-uyo-result.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+function beginEndlessMission() {
+  const missions = [
+    { type: 'distance', goal: 320 + Math.floor(random() * 280), title: 'Keep the wheels rolling' },
+    { type: 'coins', goal: 3 + Math.floor(random() * 4), title: 'Pick up some change' },
+    { type: 'deliveries', goal: 2 + Math.floor(random() * 2), title: 'Carry passengers safe' },
+    { type: 'street', goal: 24 + Math.floor(random() * 17), title: 'Cruise Wellington Bassey Way', street: 'Wellington Bassey Way' },
+  ];
+  state.endlessMission = missions[Math.floor(random() * missions.length)];
+  state.endlessMission.startDistance = state.distance;
+  state.endlessMission.startCoins = state.coins;
+  state.endlessMission.startDeliveries = state.deliveries;
+  state.endlessMission.elapsed = 0;
+  ui.mission.textContent = state.endlessMission.title;
+  ui.progress.style.width = '0%';
+  ui.detail.textContent = '0%';
+  showToast('Daily runs complete! New street mission unlocked.');
+}
+
+function updateEndlessMission(delta) {
+  const mission = state.endlessMission;
+  if (!mission) return;
+  let progress = 0;
+  let detail = '';
+  if (mission.type === 'distance') {
+    progress = Math.min(1, (state.distance - mission.startDistance) / mission.goal);
+    detail = `${Math.min(mission.goal, Math.floor(state.distance - mission.startDistance))} / ${mission.goal} m`;
+  } else if (mission.type === 'coins') {
+    progress = Math.min(1, (state.coins - mission.startCoins) / mission.goal);
+    detail = `${Math.min(mission.goal, state.coins - mission.startCoins)} / ${mission.goal} coins`;
+  } else if (mission.type === 'deliveries') {
+    progress = Math.min(1, (state.deliveries - mission.startDeliveries) / mission.goal);
+    detail = `${Math.min(mission.goal, state.deliveries - mission.startDeliveries)} / ${mission.goal} drop-offs`;
+  } else {
+    if (ui.street.textContent === mission.street) mission.elapsed += delta;
+    progress = Math.min(1, mission.elapsed / mission.goal);
+    detail = `${Math.min(mission.goal, Math.floor(mission.elapsed))} / ${mission.goal} sec · ${mission.street}`;
+  }
+  ui.progress.style.width = `${progress * 100}%`;
+  ui.detail.textContent = detail;
+  if (progress >= 1) {
+    state.score += 250;
+    state.endlessMission = null;
+    ui.mission.textContent = 'Mission complete!';
+    showToast('Mission complete! +250 points. Another one coming.');
+    if (soundEnabled) playChime();
+  }
 }
 
 function changeLane(direction) {
@@ -837,6 +1168,7 @@ function changeLane(direction) {
 function endRun(reason = null) {
   if (!state.active) return;
   state.active = false;
+  if (state.impactTime <= 0) triggerImpact();
   if (soundEnabled) playCrash();
   const final = Math.floor(state.score);
   if (final > bestScore) {
@@ -844,35 +1176,70 @@ function endRun(reason = null) {
     localStorage.setItem('kekenapepe-best', String(bestScore));
   }
   ui.best.textContent = String(bestScore).padStart(6, '0');
-  if (!ui.saveName.value) {
-    const savedName = localStorage.getItem('kekenapepe-name') || 'Rider';
-    ui.saveName.value = savedName;
+  const savedName = localStorage.getItem('kekenapepe-name') || '';
+  ui.saveName.value = savedName;
+  state.profileName = savedName || 'Uyo Rider';
+  if (!state.runId) state.runId = `${Date.now()}-${Math.floor(random() * 1e9)}`;
+  if (!state.runRecorded) {
+    recordRun();
+    state.runRecorded = true;
   }
-  syncProfileName();
-  saveLeaderboardEntry(final, state.profileName, Math.floor(state.distance));
   const crashReason = reason || crashMessages[Math.floor(random() * crashMessages.length)];
   ui.crashMessage.textContent = crashReason;
-  ui.finalScore.textContent = `${state.profileName} made it ${Math.floor(state.distance)} m · ${final} points · ${state.coins} coins · ₦${state.coins * coinPointValue} earned`;
-  ui.reviveButton.hidden = state.revives <= 0;
-  ui.crash.hidden = false;
+  ui.finalScore.textContent = `${state.profileName || 'Uyo Rider'} made it ${Math.floor(state.distance)} m · ${final} points · ${state.coins} coins · ₦${state.coins * coinPointValue} earned`;
+  ui.reviveButton.disabled = state.coins * coinPointValue < 200;
+  ui.crash.hidden = true;
+  clearTimeout(state.crashTimer);
+  state.crashTimer = setTimeout(() => {
+    if (!state.active) ui.crash.hidden = false;
+  }, 1300);
+}
+
+function triggerImpact(vehicle = null) {
+  state.impactTime = 0.9;
+  ui.impactFlash.classList.remove('active');
+  void ui.impactFlash.offsetWidth;
+  ui.impactFlash.classList.add('active');
+  setTimeout(() => ui.impactFlash.classList.remove('active'), 90);
+  const origin = vehicle ? player.position.clone().lerp(vehicle.position, 0.5) : player.position.clone();
+  for (const [index, particle] of debris.entries()) {
+    particle.mesh.visible = true;
+    particle.mesh.position.set(origin.x, 0.55 + random() * 0.8, origin.z);
+    particle.mesh.rotation.set(random() * 6, random() * 6, random() * 6);
+    particle.velocity.set((random() - 0.5) * 8, 2.2 + random() * 5, (random() - 0.5) * 8);
+    particle.spin.set(random() * 9, random() * 9, random() * 9);
+    particle.mesh.scale.setScalar(index % 3 === 0 ? 1.35 : 0.75 + random() * 0.7);
+  }
+  player.position.y = 1.05;
+  player.rotation.x = (random() - 0.5) * 0.42;
+  player.rotation.y = (random() - 0.5) * 0.7;
+  player.rotation.z = random() < 0.5 ? -2.65 : 2.65;
 }
 
 function reviveRun() {
-  if (state.active || state.revives <= 0) return;
-  state.revives -= 1;
+  if (state.active) return;
+  if (state.coins * coinPointValue < 200) {
+    showToast('Revive costs ₦200. Collect more coins next ride.');
+    return;
+  }
+  state.coins -= 200 / coinPointValue;
+  ui.coins.textContent = String(state.coins * coinPointValue);
   state.active = true;
   state.fuel = Math.max(30, state.fuel);
   state.speed = 34;
   state.hornCooldown = 0;
-  player.position.z = Math.max(player.position.z - 18, -12);
-  player.position.x = roadCurve(player.position.z) + lanes[state.lane];
+  state.invincibility = 3;
   ui.crash.hidden = true;
-  showToast('Revive used! Back on the road, boss.');
+  showToast('Revived for ₦200! You get a few seconds to recover.');
   if (soundEnabled) playChime();
 }
 
 function resetRun() {
-  syncProfileName();
+  clearTimeout(state.crashTimer);
+  state.profileName = localStorage.getItem('kekenapepe-name') || 'Uyo Rider';
+  ui.saveName.value = state.profileName === 'Uyo Rider' ? '' : state.profileName;
+  state.runId = `${Date.now()}-${Math.floor(random() * 1e9)}`;
+  state.startStreetIndex = Math.max(0, streets.indexOf(ui.startStreet.value));
   state.lane = 1;
   state.lanePosition = 0;
   state.speed = 48;
@@ -883,15 +1250,32 @@ function resetRun() {
   state.active = true;
   state.passengers = 0;
   state.dropDistance = null;
+  state.dropPrompted = false;
+  state.passengerPickup = null;
+  state.missedPassengers = 0;
   state.nextPickup = 1.5;
   state.streetIndex = 1;
   state.missionStage = 0;
   state.roadTime = 0;
   state.fuel = 100;
+  state.fuelStopped = 0;
   state.hornCooldown = 0;
-  state.revives = 1;
+  state.runRecorded = false;
+  state.nearStation = false;
+  state.invincibility = 0;
+  state.impactTime = 0;
+  player.visible = true;
+  ui.refuel.disabled = true;
+  ui.refuelFive.disabled = true;
+  ui.refuelLabel.textContent = 'BUY 1L · ₦500';
+  state.deliveries = 0;
+  state.endlessMission = null;
   if (engineGain && soundEnabled) engineGain.gain.setTargetAtTime(0.035, audioContext.currentTime, 0.08);
   player.position.set(roadCurve(3.4), 0, 3.4);
+  player.rotation.set(0, 0, 0);
+  renderer.domElement.style.transform = '';
+  ui.impactFlash.classList.remove('active');
+  for (const particle of debris) particle.mesh.visible = false;
   camera.position.x = 0;
   camera.lookAt(0, 1, -0.5);
   for (const item of traffic) {
@@ -905,16 +1289,23 @@ function resetRun() {
     landmark.position.z = landmark.userData.startZ;
     landmark.position.x = landmark.userData.startX;
   }
+  for (const checkpoint of policeCheckpoints) {
+    checkpoint.userData.passed = false;
+    checkpoint.userData.warned = false;
+  }
   for (const [index, item] of pickups.entries()) {
     item.taken = false;
+    item.warned = false;
+    item.passed = false;
     item.kind = index % 5 === 4 ? 'passenger' : 'coin';
     item.lane = Math.floor(random() * 3);
     const pickupZ = -16 - index * 12.5;
-    item.mesh.position.set(roadCurve(pickupZ) + lanes[item.lane], 0, pickupZ);
+    item.mesh.position.set(pickupRoadX(item.kind, item.lane, pickupZ), 0, pickupZ);
     item.mesh.visible = true;
   }
   ui.crash.hidden = true;
-  ui.street.textContent = streets[1];
+  state.streetIndex = state.startStreetIndex;
+  ui.street.textContent = streets[state.streetIndex];
   ui.mission.textContent = 'Reach Ibom Plaza';
   ui.progress.style.width = '0%';
   ui.detail.textContent = '0 / 400 m';
@@ -949,22 +1340,51 @@ function bindHold(button, key) {
 
 bindHold(document.querySelector('#brake'), 'braking');
 bindHold(document.querySelector('#faster'), 'boosting');
+ui.refuel.addEventListener('click', refuelAtStation);
+ui.refuelFive.addEventListener('click', () => buyFuel(5));
+ui.passengerAction.addEventListener('click', handlePassengerAction);
 ui.startButton.addEventListener('click', resetRun);
-ui.saveName.addEventListener('input', syncProfileName);
+ui.saveName.addEventListener('input', (event) => syncProfileName(event.currentTarget.value));
+ui.startStreet.addEventListener('change', renderStreetTabs);
+ui.openLeaderboard.addEventListener('click', openLeaderboard);
+ui.closeLeaderboard.addEventListener('click', closeLeaderboard);
+ui.leaderboardScreen.addEventListener('click', (event) => {
+  if (event.target === ui.leaderboardScreen) closeLeaderboard();
+});
+ui.leaderboardTabs.addEventListener('click', (event) => {
+  const selectedTab = event.target.closest('[data-period]');
+  if (!selectedTab) return;
+  leaderboardPeriod = selectedTab.dataset.period;
+  for (const tab of ui.leaderboardTabs.querySelectorAll('[data-period]')) {
+    tab.setAttribute('aria-selected', String(tab === selectedTab));
+  }
+  renderLeaderboard();
+});
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !ui.leaderboardScreen.hidden) closeLeaderboard();
+});
 ui.reviveButton.addEventListener('click', reviveRun);
+ui.resultsLeaderboard.addEventListener('click', openLeaderboard);
 ui.saveScoreButton.addEventListener('click', () => {
-  const cleanName = (ui.saveName.value || 'Rider').trim().slice(0, 14) || 'Rider';
+  const cleanName = ui.saveName.value.trim().slice(0, 14);
+  if (!cleanName) {
+    showToast('Enter a username before saving your score.');
+    ui.saveName.focus();
+    return;
+  }
   state.profileName = cleanName;
   localStorage.setItem('kekenapepe-name', cleanName);
-  saveLeaderboardEntry(Math.floor(state.score), cleanName, Math.floor(state.distance));
+  recordNamedRun(cleanName);
+  saveLeaderboardEntry(Math.floor(state.score), cleanName, Math.floor(state.distance), state.runId);
   showToast(`Saved as ${cleanName}`);
 });
 ui.shareXButton.addEventListener('click', () => {
-  const shareText = encodeURIComponent(`${state.profileName || 'Rider'} just scored ${Math.floor(state.score)} in Kekenapepe! #UyoRun #Kekenapepe`);
+  const shareText = encodeURIComponent(`${state.profileName || 'Rider'} rode ${Math.floor(state.distance)} m on ${ui.street.textContent} and scored ${Math.floor(state.score)} in Kekenapepe. ₦${state.coins * coinPointValue} earned. #UyoRun #Kekenapepe`);
   window.open(`https://twitter.com/intent/tweet?text=${shareText}`, '_blank', 'noopener,noreferrer');
 });
+ui.downloadCardButton.addEventListener('click', downloadResultCard);
 ui.shareCopyButton.addEventListener('click', async () => {
-  const text = `${state.profileName || 'Rider'} scored ${Math.floor(state.score)} in Kekenapepe — ${Math.floor(state.distance)} m in Uyo.`;
+  const text = `${state.profileName || 'Rider'} scored ${Math.floor(state.score)} in Kekenapepe — ${Math.floor(state.distance)} m on ${ui.street.textContent} in Uyo. ₦${state.coins * coinPointValue} earned.`;
   try {
     await navigator.clipboard.writeText(text);
     showToast('Result copied to clipboard.');
@@ -1065,18 +1485,19 @@ function animate(now) {
   if (state.active) {
     state.time += delta;
     state.hornCooldown = Math.max(0, state.hornCooldown - delta);
+    state.invincibility = Math.max(0, state.invincibility - delta);
+    player.visible = state.invincibility <= 0 || Math.floor(state.time * 8) % 2 === 0;
     state.fuel = Math.max(0, state.fuel - delta * (state.boosting ? 4.8 : 2.4));
-    if (state.fuel <= 0) {
-      endRun('Fuel empty. The keke coasted to a stop in the middle of Uyo.');
-    }
+    if (state.fuel <= 0) state.fuelStopped += delta;
     const signalPhase = state.time % 9;
     const activeSignal = signalPhase < 4.8 ? 'green' : signalPhase < 5.8 ? 'amber' : 'red';
     for (const signal of trafficSignals) {
       for (const [name, material] of Object.entries(signal)) material.emissiveIntensity = name === activeSignal ? 1.5 : 0.04;
     }
-    const cruisingSpeed = Math.min(68, 48 + Math.floor(state.distance / 360) * 4);
-    const targetSpeed = state.braking ? 25 : state.boosting ? Math.min(100, cruisingSpeed + 34) : cruisingSpeed;
+    const cruisingSpeed = Math.min(78, 48 + Math.floor(state.distance / 300) * 5);
+    const targetSpeed = state.fuel <= 0 || state.braking ? 0 : state.boosting ? Math.min(120, cruisingSpeed + 42) : cruisingSpeed;
     state.speed = THREE.MathUtils.damp(state.speed, targetSpeed, 2.8, delta);
+    if (state.fuel <= 0 && state.speed < 1 && state.fuelStopped > 2) endRun('Fuel empty. The keke coasted to a stop in the middle of Uyo.');
     if (soundEnabled && engineOscillator) {
       engineOscillator.frequency.setTargetAtTime(52 + state.speed * 1.15, audioContext.currentTime, 0.08);
     }
@@ -1090,7 +1511,7 @@ function animate(now) {
     camera.position.x = cameraX;
     camera.lookAt(cameraX, 1, -0.5);
     player.position.y = Math.sin(state.time * 13) * 0.035;
-    player.rotation.z = THREE.MathUtils.damp(player.rotation.z, (lanes[state.lane] - state.lanePosition) * -0.07, 9, delta);
+    player.rotation.z = THREE.MathUtils.damp(player.rotation.z, (lanes[state.lane] - state.lanePosition) * -0.018, 9, delta);
     for (const wheel of player.userData.wheels) wheel.rotation.x += forward * 0.75;
 
     for (const dash of dashes) {
@@ -1109,11 +1530,25 @@ function animate(now) {
       if (landmark.position.z > 18) landmark.position.z -= routeLength;
       landmark.position.x = roadCurve(landmark.position.z) + landmark.userData.roadsideX;
     }
+    const nearStation = fuelStations.some((station) => Math.abs(station.position.z - player.position.z) < 22);
+    ui.refuel.disabled = !state.active || state.fuel >= 99;
+    ui.refuelFive.disabled = !state.active || state.fuel >= 99;
+    if (nearStation && !state.nearStation) showToast('Fuel stop ahead! Tap REFUEL while you are beside it.');
+    state.nearStation = nearStation;
     for (const checkpoint of policeCheckpoints) {
-      const barrierDistance = checkpoint.position.z + checkpoint.userData.barrierOffset - player.position.z;
-      const checkpointLaneOffset = player.position.x - checkpoint.position.x;
-      if (Math.abs(barrierDistance) < 1.1 && Math.abs(checkpointLaneOffset) > 1.05) {
-        endRun('You hit the police checkpoint barrier. Run over.');
+      const barrierDistance = player.position.z - (checkpoint.position.z + checkpoint.userData.barrierOffset);
+      if (checkpoint.userData.passed) continue;
+      if (barrierDistance > 0 && barrierDistance < 36 && !checkpoint.userData.warned) {
+        checkpoint.userData.warned = true;
+        showToast('Checkpoint ahead, abeg brake make police clear you.');
+      }
+      if (barrierDistance <= 8 && barrierDistance >= -4) {
+        if (state.speed <= 25) {
+          checkpoint.userData.passed = true;
+          showToast('Sharp one! Police don clear you. Move on!');
+        } else if (barrierDistance <= 0) {
+          endRun('Omo, you fly enter checkpoint! Brake well next time, abeg.');
+        }
       }
     }
     const roundaboutDistance = roundaboutLandmark.position.z - player.position.z;
@@ -1137,7 +1572,10 @@ function animate(now) {
         item.mesh.position.x = item.lanePosition;
       }
       for (const wheel of item.mesh.userData.wheels) wheel.rotation.x += (forward - item.speed * delta) * 0.75;
-      if (item.mesh.position.z > player.position.z - item.hitDepth && item.mesh.position.z < player.position.z + item.hitDepth && Math.abs(item.mesh.position.x - player.position.x) < item.hitWidth) {
+      const longitudinalOverlap = Math.abs(item.mesh.position.z - player.position.z) < item.hitDepth + 1.05;
+      const lateralOverlap = Math.abs(item.mesh.position.x - player.position.x) < item.hitWidth + 0.68;
+      if (state.invincibility <= 0 && longitudinalOverlap && lateralOverlap) {
+        triggerImpact(item.mesh);
         endRun();
         break;
       }
@@ -1155,24 +1593,56 @@ function animate(now) {
       const availablePickup = pickups.find((item) => item.taken || item.mesh.position.z > 11);
       if (availablePickup) {
         availablePickup.taken = false;
+        availablePickup.warned = false;
+        availablePickup.passed = false;
         availablePickup.lane = Math.floor(random() * 3);
         const pickupZ = -110 - random() * 35;
-        availablePickup.mesh.position.set(roadCurve(pickupZ) + lanes[availablePickup.lane], 0, pickupZ);
+        availablePickup.mesh.position.set(pickupRoadX(availablePickup.kind, availablePickup.lane, pickupZ), 0, pickupZ);
         availablePickup.mesh.visible = true;
       }
       state.nextPickup = 0.9 + random() * 0.7;
     }
+    state.passengerPickup = null;
     for (const item of pickups) {
       if (item.taken) continue;
       item.mesh.position.z += forward;
-      item.mesh.position.x = roadCurve(item.mesh.position.z) + lanes[item.lane];
+      item.mesh.position.x = pickupRoadX(item.kind, item.lane, item.mesh.position.z);
       if (item.kind === 'coin') {
         const coin = item.mesh.children[0];
         coin.rotation.y += delta * 2.4;
         coin.position.y = 1.14 + Math.sin(state.time * 4 + item.phase) * 0.1;
       }
-      if (item.kind === 'passenger') item.mesh.children[1].rotation.y = Math.sin(state.time * 2 + item.phase) * 0.08;
-      if (item.mesh.position.z > player.position.z - 1.2 && item.mesh.position.z < player.position.z + 1.25 && Math.abs(lanes[item.lane] - player.position.x) < 1.18) {
+      if (item.kind === 'passenger') {
+        if (item.mesh.userData.waitingPerson) item.mesh.userData.waitingPerson.rotation.y = Math.sin(state.time * 2 + item.phase) * 0.08;
+        if (!state.passengers && !item.passed && item.mesh.position.z > player.position.z + 1.25) {
+          item.passed = true;
+          item.taken = true;
+          item.mesh.visible = false;
+          state.missedPassengers += 1;
+          if (state.missedPassengers % 3 === 0) {
+            showToast(`Omor, you no get joy oo! You just pass ${state.missedPassengers} passengers.`);
+          }
+          continue;
+        }
+        const passengerDistance = player.position.z - item.mesh.position.z;
+        const alignedForPickup = Math.abs(item.mesh.position.x - player.position.x) < 6.8;
+        if (state.passengers === 0 && alignedForPickup && passengerDistance >= 0 && passengerDistance <= 10) {
+          state.passengerPickup = item;
+          if (state.speed <= 5) {
+            boardPassenger(item);
+            continue;
+          }
+        }
+        if (state.passengers === 0 && alignedForPickup && passengerDistance > 10 && passengerDistance < 28 && !item.warned) {
+          item.warned = true;
+          showToast('Passenger ahead. Pull up beside them to pick them.');
+        }
+        if (state.passengers > 0) continue;
+      }
+      const pickupReached = item.mesh.position.z > player.position.z - 1.2
+        && item.mesh.position.z < player.position.z + 1.25
+        && Math.abs(item.mesh.position.x - player.position.x) < 1.18;
+      if (pickupReached && (item.kind !== 'passenger' || state.speed <= 3)) {
         item.taken = true;
         item.mesh.visible = false;
         if (item.kind === 'coin') {
@@ -1183,18 +1653,18 @@ function animate(now) {
         } else if (state.passengers === 0) {
           state.passengers = 1;
           state.dropDistance = state.distance + 160;
-          showToast('Passenger onboard! Drop-off ahead.');
+          state.dropPrompted = false;
+          showToast('Passenger onboard! Stop and tap DROP OFF to let them out.');
         }
       }
     }
 
-    if (state.passengers && state.distance >= state.dropDistance) {
-      state.passengers = 0;
-      state.dropDistance = null;
-      state.score += 150;
-      showToast('Drop-off complete! +150 points');
+    if (state.passengers && !state.dropPrompted && state.distance >= state.dropDistance - 24) {
+      state.dropPrompted = true;
+      showToast('Drop-off ahead. Stop the keke for your passenger.');
     }
-    const streetIndex = (Math.floor(state.distance / 180) + 1) % streets.length;
+    if (state.passengers && state.distance >= state.dropDistance && state.speed <= 3) completePassengerDropoff();
+    const streetIndex = (state.startStreetIndex + Math.floor(state.distance / 180)) % streets.length;
     if (streetIndex !== state.streetIndex) {
       state.streetIndex = streetIndex;
       ui.street.textContent = streets[streetIndex];
@@ -1216,24 +1686,45 @@ function animate(now) {
         state.missionStage = 2;
         state.score += 300;
         ui.mission.textContent = 'Uyo road legend';
-        ui.detail.textContent = 'All missions complete';
+        ui.detail.textContent = 'Daily missions complete';
         ui.progress.style.width = '100%';
         showToast('Uyo road legend! Mission complete +300');
       }
+    }
+    if (state.missionStage >= 2) {
+      if (!state.endlessMission) beginEndlessMission();
+      updateEndlessMission(delta);
     }
     if (state.distance > 350 && state.distance < 450) ui.landmark.classList.add('visible');
     else ui.landmark.classList.remove('visible');
     ui.score.textContent = String(Math.floor(state.score)).padStart(6, '0');
     ui.speed.textContent = String(Math.round(state.speed));
-    ui.meter.style.width = `${Math.min(100, state.speed / 88 * 100)}%`;
+    ui.meter.style.width = `${Math.min(100, state.speed / 120 * 100)}%`;
     ui.fuel.textContent = String(Math.max(0, Math.round(state.fuel)));
     ui.fuelMeter.style.width = `${Math.max(0, state.fuel)}%`;
-    ui.coins.textContent = String(state.coins);
+    ui.coins.textContent = String(state.coins * coinPointValue);
     ui.hornStatus.textContent = state.hornCooldown > 0 ? `${state.hornCooldown.toFixed(1)}s` : 'READY';
     ui.passengers.textContent = String(state.passengers);
     ui.passengerTitle.textContent = state.passengers ? 'Passenger onboard' : 'No passenger';
     ui.passengerDetail.textContent = state.passengers ? `${Math.max(0, Math.ceil(state.dropDistance - state.distance))} m to drop-off` : 'Look out for a pickup';
+    ui.passengerAction.hidden = !state.passengers && !state.passengerPickup;
+    ui.passengerAction.textContent = state.passengers ? 'DROP OFF' : 'PICK UP';
+    ui.passengerAction.disabled = state.speed > 5;
   }
+  if (state.impactTime > 0) {
+    state.impactTime = Math.max(0, state.impactTime - delta);
+    const shake = state.impactTime / 0.62;
+    renderer.domElement.style.transform = `translate(${(random() - 0.5) * 14 * shake}px, ${(random() - 0.5) * 10 * shake}px)`;
+    for (const particle of debris) {
+      if (!particle.mesh.visible) continue;
+      particle.mesh.position.addScaledVector(particle.velocity, delta);
+      particle.velocity.y -= 9.8 * delta;
+      particle.mesh.rotation.x += particle.spin.x * delta;
+      particle.mesh.rotation.y += particle.spin.y * delta;
+      particle.mesh.rotation.z += particle.spin.z * delta;
+      if (particle.mesh.position.y < 0 || state.impactTime === 0) particle.mesh.visible = false;
+    }
+  } else renderer.domElement.style.transform = '';
   renderer.render(scene, camera);
 }
 
@@ -1300,9 +1791,30 @@ function playChime() {
 
 function playCrash() {
   engineGain.gain.setTargetAtTime(0.008, audioContext.currentTime, 0.06);
-  playTone(220, 0.2, 'sawtooth', 0.11);
-  playTone(146.83, 0.24, 'triangle', 0.09, 0.12);
-  playTone(82.41, 0.36, 'sawtooth', 0.12, 0.25);
+  const now = audioContext.currentTime;
+  const length = Math.floor(audioContext.sampleRate * 0.42);
+  const buffer = audioContext.createBuffer(1, length, audioContext.sampleRate);
+  const samples = buffer.getChannelData(0);
+  for (let index = 0; index < length; index += 1) {
+    const decay = 1 - index / length;
+    samples[index] = (random() * 2 - 1) * decay * decay;
+  }
+  const noise = audioContext.createBufferSource();
+  const filter = audioContext.createBiquadFilter();
+  const crunch = audioContext.createGain();
+  noise.buffer = buffer;
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(1500, now);
+  filter.frequency.exponentialRampToValueAtTime(280, now + 0.36);
+  crunch.gain.setValueAtTime(0.34, now);
+  crunch.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+  noise.connect(filter);
+  filter.connect(crunch);
+  crunch.connect(masterGain);
+  noise.start(now);
+  noise.stop(now + 0.42);
+  playTone(92, 0.34, 'sawtooth', 0.24);
+  playTone(174, 0.18, 'triangle', 0.12, 0.04);
 }
 
 window.addEventListener('resize', () => {
@@ -1311,7 +1823,11 @@ window.addEventListener('resize', () => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
 });
 
+renderStreetTabs();
 renderLeaderboard();
+renderSavedStats();
+updateLocalClock();
+setInterval(updateLocalClock, 1000);
 requestAnimationFrame(animate);
-setTimeout(() => ui.loading.classList.add('hidden'), 450);
-setTimeout(() => ui.loading.remove(), 1000);
+setTimeout(() => ui.loading.classList.add('hidden'), 2000);
+setTimeout(() => ui.loading.remove(), 2450);

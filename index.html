@@ -16,6 +16,7 @@
           <span class="brand-copy"><strong>kekenapepe</strong><small>UYO, AKWA IBOM</small></span>
         </a>
         <div class="route-pill"><span class="live-dot"></span><span id="street-name">Ikot Ekpene Road</span><span class="route-divider">/</span><span class="route-district">CITY RUN</span></div>
+        <time class="local-clock" id="local-clock" aria-label="Local date and time"><span id="local-date"></span><strong id="local-time"></strong></time>
         <button class="sound-button is-muted" id="sound-toggle" aria-label="Enable sound" aria-pressed="false" title="Enable sound"><span aria-hidden="true">♪</span></button>
       </header>
 
@@ -23,7 +24,7 @@
         <div class="score-block"><span class="eyebrow">RUN SCORE</span><strong id="score">000000</strong><span class="score-best">BEST <b id="best-score">000000</b></span></div>
         <div class="hud-stats">
           <div class="stat"><span class="stat-label">SPEED</span><strong><span id="speed">48</span><small> km/h</small></strong><div class="speed-meter"><i id="speed-meter-fill"></i></div></div>
-          <div class="stat coin-stat"><span class="stat-label">POCKET</span><strong><span class="coin-icon">₦</span><span id="coins">0</span></strong><small class="stat-caption">collected</small></div>
+          <div class="stat coin-stat"><span class="stat-label">NAIRA</span><strong><span class="coin-icon">₦</span><span id="coins">0</span></strong><small class="stat-caption">earned</small></div>
           <div class="stat fuel-stat"><span class="stat-label">FUEL</span><strong><span id="fuel">100</span><small>%</small></strong><div class="fuel-meter"><i id="fuel-meter-fill"></i></div></div>
           <div class="stat horn-stat"><span class="stat-label">HORN</span><strong id="horn-status">READY</strong></div>
         </div>
@@ -40,9 +41,11 @@
         <span class="ride-icon" aria-hidden="true">♙</span>
         <span><strong id="passenger-title">No passenger</strong><small id="passenger-detail">Look out for a pickup</small></span>
         <span class="ride-count" id="passenger-count">0</span>
+        <button class="passenger-action" id="passenger-action" type="button" hidden>DROP OFF</button>
       </section>
 
       <div class="landmark-label" id="landmark-label" aria-hidden="true"><span></span><strong>IBOM PLAZA</strong><small>UYO CITY CENTRE</small></div>
+      <div class="impact-flash" id="impact-flash" aria-hidden="true"></div>
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
       <footer class="controls" aria-label="Driving controls">
@@ -56,29 +59,53 @@
           <button class="control-button pedal-button brake-button" id="brake" aria-label="Brake" title="Brake"><span class="pedal-icon" aria-hidden="true">Ⅱ</span><span>BRAKE</span></button>
           <button class="control-button pedal-button faster-button" id="faster" aria-label="Go faster" title="Go faster"><span class="pedal-icon" aria-hidden="true">↗</span><span>FASTER</span></button>
           <button class="control-button pedal-button horn-button" id="horn" aria-label="Sound the horn" title="Sound the horn"><span class="pedal-icon" aria-hidden="true">♫</span><span>HORN</span></button>
+          <button class="control-button pedal-button refuel-button" id="refuel" aria-label="Buy one litre of fuel for 500 naira" title="Buy 1 litre · ₦500"><span class="pedal-icon" aria-hidden="true">⛽</span><span>1L · ₦500</span></button>
+          <button class="control-button pedal-button refuel-button" id="refuel-five" aria-label="Buy five litres of fuel for 2500 naira" title="Buy 5 litres · ₦2,500"><span class="pedal-icon" aria-hidden="true">⛽</span><span>5L · ₦2,500</span></button>
         </div>
       </footer>
       <div class="start-screen" id="start-screen" aria-live="polite">
         <div class="start-panel">
-          <span class="crash-kicker">UYO, AKWA IBOM</span>
-          <h1>Kekenapepe</h1>
-          <p class="start-tagline">No wahala, make we run!</p>
+          <span class="home-eyebrow">UYO, AKWA IBOM · NIGERIA</span>
+          <h1>KEKENAPEPE</h1>
+          <p class="start-tagline">UYO RUN</p>
+          <p class="start-location">No wahala, make we run!</p>
+          <section class="route-picker" aria-label="Choose a starting street">
+            <h2>Choose your route</h2>
+            <div class="street-tabs" id="street-tabs" role="tablist" aria-label="Uyo streets"></div>
+            <select id="start-street" tabindex="-1" aria-hidden="true">
+              <option>Ikot Ekpene Road</option><option>Aka Road</option><option>Abak Road</option><option>Oron Road</option>
+              <option>Wellington Bassey Way</option><option>Nwaniba Road</option><option>Atiku Abubakar Avenue</option><option>Ikpa Road</option>
+              <option>IBB Avenue</option><option>Itam Road</option><option>Nelson Mandela Road</option>
+            </select>
+          </section>
           <div class="start-meta">
             <div>
-              <span>Fuel</span>
-              <strong>100%</strong>
+              <span>Best distance</span>
+              <strong id="start-best-distance">0 m</strong>
             </div>
             <div>
-              <span>Horn</span>
-              <strong>Ready</strong>
+              <span>Total rides</span>
+              <strong id="start-total-runs">0</strong>
             </div>
           </div>
-          <button id="start-button" class="primary-button">START RUN <span aria-hidden="true">↗</span></button>
-          <div class="leaderboard-box">
-            <h2>Top riders</h2>
-            <ol id="leaderboard-list"></ol>
-          </div>
+          <button id="start-button" class="primary-button">START RIDE <span aria-hidden="true">↗</span></button>
+          <button id="open-leaderboard" class="leaderboard-open" type="button"><span>LEADERBOARD</span><span aria-hidden="true">↗</span></button>
         </div>
+      </div>
+      <div class="leaderboard-screen" id="leaderboard-screen" hidden>
+        <section class="leaderboard-panel" role="dialog" aria-modal="true" aria-labelledby="leaderboard-heading">
+          <header class="leaderboard-header">
+            <div><span class="home-eyebrow">UYO RUN · LOCAL RIDERS</span><h2 id="leaderboard-heading">Leaderboard</h2></div>
+            <button class="modal-close" id="close-leaderboard" type="button" aria-label="Close leaderboard">×</button>
+          </header>
+          <div class="leaderboard-tabs" role="tablist" aria-label="Leaderboard period">
+            <button type="button" role="tab" aria-selected="true" data-period="daily">Daily</button>
+            <button type="button" role="tab" aria-selected="false" data-period="weekly">Weekly</button>
+            <button type="button" role="tab" aria-selected="false" data-period="monthly">Monthly</button>
+          </div>
+          <ol id="leaderboard-list" aria-live="polite"></ol>
+          <p class="leaderboard-empty" id="leaderboard-empty" hidden>No scores for this period yet. Start a ride and claim the first spot.</p>
+        </section>
       </div>
       <div class="crash-screen" id="crash-screen" hidden>
         <span class="crash-kicker">AH! E DON HAPPEN</span>
@@ -91,16 +118,18 @@
           </label>
           <div class="save-actions">
             <button id="save-score-button" class="secondary-button">SAVE SCORE</button>
+            <button id="download-card-button" class="secondary-button">DOWNLOAD CARD</button>
             <button id="share-x-button" class="secondary-button">SHARE X</button>
             <button id="share-copy-button" class="secondary-button">COPY RESULT</button>
           </div>
         </div>
         <div class="crash-actions">
-          <button id="revive-button" class="secondary-button" hidden>REVIVE <span aria-hidden="true">+1</span></button>
+          <button id="revive-button" class="secondary-button">REVIVE · ₦200</button>
+          <button id="results-leaderboard" class="leaderboard-shortcut" type="button">LEADERBOARD <span aria-hidden="true">↗</span></button>
           <button id="restart-button" class="primary-button">RIDE AGAIN <span aria-hidden="true">↗</span></button>
         </div>
       </div>
-      <div class="loading-screen" id="loading-screen" aria-live="polite">Warming up your keke<span>...</span></div>
+      <div class="loading-screen" id="loading-screen" aria-live="polite"><span class="loading-kicker">AKWA IBOM · NIGERIA</span><strong class="loading-brand">KEKENAPEPE</strong><span class="loading-run">UYO AYAYA</span><span class="loading-dots">● ● ●</span></div>
     </main>
     <script type="module" src="/src/main.js"></script>
   </body>
