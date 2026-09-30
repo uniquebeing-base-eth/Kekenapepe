@@ -141,7 +141,8 @@ for (const x of [-laneWidth / 2, laneWidth / 2]) {
   for (let i = 0; i < 75; i += 1) {
     const dash = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.018, 2.1), dashMaterial);
     dash.userData.laneMarkX = x;
-    dash.position.set(routeCurve(9 - i * 7.2) + x, -0.015, 9 - i * 7.2);
+    dash.userData.startZ = 9 - i * 7.2;
+    dash.position.set(routeCurve(dash.userData.startZ) + x, -0.015, dash.userData.startZ);
     scene.add(dash);
     dashes.push(dash);
   }
@@ -237,9 +238,11 @@ for (let i = 0; i < 50; i += 1) {
   for (const side of [-1, 1]) {
     if (i % 3 === 0 || random() > 0.48) {
       const tree = createPalm(side * (8.4 + random() * 6), z - random() * 3, 0.72 + random() * 0.62);
+      tree.userData.startZ = tree.position.z;
       scenery.push(tree);
     } else {
       const building = createBuilding(side * (11 + random() * 5), z - random() * 2);
+      building.userData.startZ = building.position.z;
       scenery.push(building);
     }
   }
@@ -1284,6 +1287,14 @@ function resetRun() {
   player.position.set(routeCurve(3.4) + routeLaneX(1), 0, 3.4);
   camera.position.x = 0;
   camera.lookAt(0, 1, -0.5);
+  for (const dash of dashes) {
+    dash.position.z = dash.userData.startZ;
+    dash.position.x = routeCurve(dash.position.z) + dash.userData.laneMarkX + activeRoute().laneBias;
+  }
+  for (const object of scenery) {
+    object.position.z = object.userData.startZ;
+    object.position.x = routeCurve(object.position.z) + object.userData.roadsideX;
+  }
   for (const item of traffic) {
     item.mesh.position.z = -42 - random() * 70;
     item.lane = Math.floor(random() * 3);
@@ -1521,10 +1532,41 @@ window.addEventListener('blur', () => {
 });
 
 let previousTime = performance.now();
+let attractTime = 0;
+function updateAttractScene(delta) {
+  const forward = 5.5 * delta;
+  attractTime += delta;
+  player.position.y = Math.sin(attractTime * 2.2) * 0.025;
+  for (const wheel of player.userData.wheels) wheel.rotation.x += forward * 0.75;
+  for (const dash of dashes) {
+    dash.position.z += forward;
+    if (dash.position.z > 12) dash.position.z -= dashes.length / 2 * 7.2;
+    dash.position.x = routeCurve(dash.position.z) + dash.userData.laneMarkX + activeRoute().laneBias;
+  }
+  for (const object of scenery) {
+    object.position.z += forward;
+    if (object.position.z > 18) object.position.z -= sceneryLoopLength;
+    object.position.x = routeCurve(object.position.z) + object.userData.roadsideX;
+  }
+  for (const landmark of cityLandmarks) {
+    landmark.position.z += forward;
+    if (landmark.position.z > 18) landmark.position.z -= routeLength;
+    landmark.position.x = routeCurve(landmark.position.z) + landmark.userData.roadsideX;
+  }
+  for (const item of traffic) {
+    item.mesh.position.z += (forward - item.speed * delta);
+    if (item.mesh.position.z > 16) item.mesh.position.z = -105 - random() * 165;
+    item.lanePosition = routeCurve(item.mesh.position.z) + routeLaneX(item.lane);
+    item.mesh.position.x = item.lanePosition;
+    for (const wheel of item.mesh.userData.wheels) wheel.rotation.x += forward * 0.75;
+  }
+}
+
 function animate(now) {
   requestAnimationFrame(animate);
   const delta = Math.min((now - previousTime) / 1000, 0.05);
   previousTime = now;
+  if (!state.active && ui.crash.hidden) updateAttractScene(delta);
   if (state.active) {
     state.time += delta;
     state.hornCooldown = Math.max(0, state.hornCooldown - delta);
