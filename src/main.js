@@ -759,26 +759,63 @@ for (let i = 0; i < 18; i += 1) createPickup(i % 5 === 4 ? 'passenger' : 'coin',
 
 const ui = {
   score: document.querySelector('#score'), best: document.querySelector('#best-score'), speed: document.querySelector('#speed'),
-  meter: document.querySelector('#speed-meter-fill'), coins: document.querySelector('#coins'), street: document.querySelector('#street-name'),
+  meter: document.querySelector('#speed-meter-fill'), fuel: document.querySelector('#fuel'), fuelMeter: document.querySelector('#fuel-meter-fill'),
+  coins: document.querySelector('#coins'), street: document.querySelector('#street-name'),
   mission: document.querySelector('#mission-title'), progress: document.querySelector('#mission-progress'), detail: document.querySelector('#mission-detail'),
   passengerTitle: document.querySelector('#passenger-title'), passengerDetail: document.querySelector('#passenger-detail'), passengers: document.querySelector('#passenger-count'),
-  toast: document.querySelector('#toast'), landmark: document.querySelector('#landmark-label'), crash: document.querySelector('#crash-screen'),
+  hornStatus: document.querySelector('#horn-status'), toast: document.querySelector('#toast'), landmark: document.querySelector('#landmark-label'), crash: document.querySelector('#crash-screen'),
   crashMessage: document.querySelector('#crash-message'), finalScore: document.querySelector('#final-score'), loading: document.querySelector('#loading-screen'),
+  startScreen: document.querySelector('#start-screen'), startButton: document.querySelector('#start-button'), reviveButton: document.querySelector('#revive-button'),
+  saveName: document.querySelector('#save-name'), saveScoreButton: document.querySelector('#save-score-button'), shareXButton: document.querySelector('#share-x-button'),
+  shareCopyButton: document.querySelector('#share-copy-button'), leaderboard: document.querySelector('#leaderboard-list'),
 };
 
 const streets = ['Abak Road', 'Ikot Ekpene Road', 'Aka Road', 'Wellington Bassey Way', 'Atiku Abubakar Avenue', 'Oron Road', 'Nwaniba Road', 'Ikpa Road', 'IBB Avenue', 'Itam Road', 'Nelson Mandela Road'];
 const coinPointValue = 50;
+const leaderboardKey = 'kekenapepe-leaderboard';
 const crashMessages = [
   'Even the keke needs a breather.', 'My brother, the road no be yours alone!', 'This keke don collect.', 'Omo, that one pain small.',
   'Conductor! Make we try again.', 'No worry. Uyo traffic gets everybody.',
 ];
 const state = {
   lane: 1, lanePosition: 0, speed: 48, score: 0, coins: 0, distance: 0, time: 0,
-  active: true, braking: false, boosting: false, passengers: 0, dropDistance: null,
+  active: false, braking: false, boosting: false, passengers: 0, dropDistance: null,
   nextPickup: 1.5, streetIndex: 1, toastTimer: null, missionStage: 0, roadTime: 0,
+  fuel: 100, hornCooldown: 0, profileName: 'Uyo Driver', revives: 1,
 };
 let bestScore = Number(localStorage.getItem('kekenapepe-best') || 0);
 ui.best.textContent = String(bestScore).padStart(6, '0');
+
+function getLeaderboard() {
+  try {
+    return JSON.parse(localStorage.getItem(leaderboardKey) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function renderLeaderboard() {
+  const entries = getLeaderboard();
+  if (!ui.leaderboard) return;
+  ui.leaderboard.innerHTML = entries.length
+    ? entries.slice(0, 5).map((entry, index) => `<li><span>${index + 1}. ${entry.name}</span><strong>${entry.score}</strong></li>`).join('')
+    : '<li class="empty-entry"><span>1. First rider</span><strong>0</strong></li>';
+}
+
+function saveLeaderboardEntry(score, name, distance) {
+  const entries = getLeaderboard();
+  const cleanedName = (name || 'Rider').trim().slice(0, 14) || 'Rider';
+  entries.push({ name: cleanedName, score, distance, at: Date.now() });
+  entries.sort((a, b) => b.score - a.score || b.distance - a.distance);
+  localStorage.setItem(leaderboardKey, JSON.stringify(entries.slice(0, 5)));
+  renderLeaderboard();
+}
+
+function syncProfileName() {
+  const cleaned = (ui.saveName.value || localStorage.getItem('kekenapepe-name') || 'Rider').trim().slice(0, 14) || 'Rider';
+  state.profileName = cleaned;
+  ui.saveName.value = cleaned;
+}
 
 function showToast(message) {
   ui.toast.textContent = message;
@@ -807,12 +844,35 @@ function endRun(reason = null) {
     localStorage.setItem('kekenapepe-best', String(bestScore));
   }
   ui.best.textContent = String(bestScore).padStart(6, '0');
-  ui.crashMessage.textContent = reason || crashMessages[Math.floor(random() * crashMessages.length)];
-  ui.finalScore.textContent = `You made it ${Math.floor(state.distance)} m · ${final} points · ${state.coins} coins · ₦${state.coins * coinPointValue} earned`;
+  if (!ui.saveName.value) {
+    const savedName = localStorage.getItem('kekenapepe-name') || 'Rider';
+    ui.saveName.value = savedName;
+  }
+  syncProfileName();
+  saveLeaderboardEntry(final, state.profileName, Math.floor(state.distance));
+  const crashReason = reason || crashMessages[Math.floor(random() * crashMessages.length)];
+  ui.crashMessage.textContent = crashReason;
+  ui.finalScore.textContent = `${state.profileName} made it ${Math.floor(state.distance)} m · ${final} points · ${state.coins} coins · ₦${state.coins * coinPointValue} earned`;
+  ui.reviveButton.hidden = state.revives <= 0;
   ui.crash.hidden = false;
 }
 
+function reviveRun() {
+  if (state.active || state.revives <= 0) return;
+  state.revives -= 1;
+  state.active = true;
+  state.fuel = Math.max(30, state.fuel);
+  state.speed = 34;
+  state.hornCooldown = 0;
+  player.position.z = Math.max(player.position.z - 18, -12);
+  player.position.x = roadCurve(player.position.z) + lanes[state.lane];
+  ui.crash.hidden = true;
+  showToast('Revive used! Back on the road, boss.');
+  if (soundEnabled) playChime();
+}
+
 function resetRun() {
+  syncProfileName();
   state.lane = 1;
   state.lanePosition = 0;
   state.speed = 48;
@@ -827,6 +887,9 @@ function resetRun() {
   state.streetIndex = 1;
   state.missionStage = 0;
   state.roadTime = 0;
+  state.fuel = 100;
+  state.hornCooldown = 0;
+  state.revives = 1;
   if (engineGain && soundEnabled) engineGain.gain.setTargetAtTime(0.035, audioContext.currentTime, 0.08);
   player.position.set(roadCurve(3.4), 0, 3.4);
   camera.position.x = 0;
@@ -859,7 +922,11 @@ function resetRun() {
   ui.passengerDetail.textContent = 'Look out for a pickup';
   ui.passengers.textContent = '0';
   ui.landmark.classList.remove('visible');
-  showToast('New run. Make we move!');
+  ui.fuel.textContent = '100';
+  ui.fuelMeter.style.width = '100%';
+  ui.hornStatus.textContent = 'READY';
+  ui.startScreen.classList.add('hidden');
+  showToast(`New run. Make we move!`);
 }
 
 function bindHold(button, key) {
@@ -882,7 +949,36 @@ function bindHold(button, key) {
 
 bindHold(document.querySelector('#brake'), 'braking');
 bindHold(document.querySelector('#faster'), 'boosting');
+ui.startButton.addEventListener('click', resetRun);
+ui.saveName.addEventListener('input', syncProfileName);
+ui.reviveButton.addEventListener('click', reviveRun);
+ui.saveScoreButton.addEventListener('click', () => {
+  const cleanName = (ui.saveName.value || 'Rider').trim().slice(0, 14) || 'Rider';
+  state.profileName = cleanName;
+  localStorage.setItem('kekenapepe-name', cleanName);
+  saveLeaderboardEntry(Math.floor(state.score), cleanName, Math.floor(state.distance));
+  showToast(`Saved as ${cleanName}`);
+});
+ui.shareXButton.addEventListener('click', () => {
+  const shareText = encodeURIComponent(`${state.profileName || 'Rider'} just scored ${Math.floor(state.score)} in Kekenapepe! #UyoRun #Kekenapepe`);
+  window.open(`https://twitter.com/intent/tweet?text=${shareText}`, '_blank', 'noopener,noreferrer');
+});
+ui.shareCopyButton.addEventListener('click', async () => {
+  const text = `${state.profileName || 'Rider'} scored ${Math.floor(state.score)} in Kekenapepe — ${Math.floor(state.distance)} m in Uyo.`;
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('Result copied to clipboard.');
+  } catch {
+    showToast('Copy failed.');
+  }
+});
+document.querySelector('#horn').addEventListener('click', triggerHorn);
 document.querySelector('#restart-button').addEventListener('click', resetRun);
+document.querySelectorAll('input[name="vehicle"]').forEach((choice) => {
+  choice.addEventListener('change', () => {
+    document.querySelectorAll('.profile-option').forEach((option) => option.classList.toggle('is-selected', option.querySelector('input').checked));
+  });
+});
 
 let swipeStart = null;
 gameElement.addEventListener('pointerdown', (event) => {
@@ -906,6 +1002,21 @@ let engineOscillator = null;
 let engineGain = null;
 let musicTimer = null;
 let musicStep = 0;
+
+function triggerHorn() {
+  if (!state.active) return;
+  if (state.hornCooldown > 0) {
+    showToast(`Horn cooling down • ${state.hornCooldown.toFixed(1)}s`);
+    return;
+  }
+  state.hornCooldown = 2.6;
+  state.score += 12;
+  if (soundEnabled) {
+    playTone(520, 0.14, 'square', 0.08);
+    playTone(660, 0.2, 'square', 0.08, 0.08);
+  }
+  showToast('Horn blast! Road clear.');
+}
 document.querySelector('#sound-toggle').addEventListener('click', (event) => {
   soundEnabled = !soundEnabled;
   event.currentTarget.classList.toggle('is-muted', !soundEnabled);
@@ -929,6 +1040,7 @@ window.addEventListener('keydown', (event) => {
   if (event.key === 'ArrowRight' || event.key.toLowerCase() === 'd') changeLane(1);
   if (event.key === 'ArrowUp' || event.key.toLowerCase() === 'w') state.boosting = true;
   if (event.key === 'ArrowDown' || event.key.toLowerCase() === 's' || event.key === ' ') state.braking = true;
+  if (event.key.toLowerCase() === 'h') triggerHorn();
   if (event.key.toLowerCase() === 'r' && !state.active) resetRun();
   keysDown.add(event.key);
 });
@@ -952,12 +1064,18 @@ function animate(now) {
   previousTime = now;
   if (state.active) {
     state.time += delta;
+    state.hornCooldown = Math.max(0, state.hornCooldown - delta);
+    state.fuel = Math.max(0, state.fuel - delta * (state.boosting ? 4.8 : 2.4));
+    if (state.fuel <= 0) {
+      endRun('Fuel empty. The keke coasted to a stop in the middle of Uyo.');
+    }
     const signalPhase = state.time % 9;
     const activeSignal = signalPhase < 4.8 ? 'green' : signalPhase < 5.8 ? 'amber' : 'red';
     for (const signal of trafficSignals) {
       for (const [name, material] of Object.entries(signal)) material.emissiveIntensity = name === activeSignal ? 1.5 : 0.04;
     }
-    const targetSpeed = state.braking ? 25 : state.boosting ? 88 : 48;
+    const cruisingSpeed = Math.min(68, 48 + Math.floor(state.distance / 360) * 4);
+    const targetSpeed = state.braking ? 25 : state.boosting ? Math.min(100, cruisingSpeed + 34) : cruisingSpeed;
     state.speed = THREE.MathUtils.damp(state.speed, targetSpeed, 2.8, delta);
     if (soundEnabled && engineOscillator) {
       engineOscillator.frequency.setTargetAtTime(52 + state.speed * 1.15, audioContext.currentTime, 0.08);
@@ -983,12 +1101,12 @@ function animate(now) {
     }
     for (const object of scenery) {
       object.position.z += forward;
-      if (object.position.z > 18) object.position.z -= 30 * 7.1;
+      if (object.position.z > 18) object.position.z -= sceneryLoopLength;
       object.position.x = roadCurve(object.position.z) + object.userData.roadsideX;
     }
     for (const landmark of cityLandmarks) {
       landmark.position.z += forward;
-      if (landmark.position.z > 18) landmark.position.z -= 560;
+      if (landmark.position.z > 18) landmark.position.z -= routeLength;
       landmark.position.x = roadCurve(landmark.position.z) + landmark.userData.roadsideX;
     }
     for (const checkpoint of policeCheckpoints) {
@@ -997,10 +1115,6 @@ function animate(now) {
       if (Math.abs(barrierDistance) < 1.1 && Math.abs(checkpointLaneOffset) > 1.05) {
         endRun('You hit the police checkpoint barrier. Run over.');
       }
-      if (object.position.z > 18) object.position.z -= sceneryLoopLength;
-      if (landmark.position.z > 18) landmark.position.z -= routeLength;
-      const cruisingSpeed = Math.min(68, 48 + Math.floor(state.distance / 360) * 4);
-      const targetSpeed = state.braking ? 25 : state.boosting ? Math.min(100, cruisingSpeed + 34) : cruisingSpeed;
     }
     const roundaboutDistance = roundaboutLandmark.position.z - player.position.z;
     if (roundaboutDistance > -1.5 && roundaboutDistance < 1.5 && state.lane === 1) {
@@ -1112,7 +1226,10 @@ function animate(now) {
     ui.score.textContent = String(Math.floor(state.score)).padStart(6, '0');
     ui.speed.textContent = String(Math.round(state.speed));
     ui.meter.style.width = `${Math.min(100, state.speed / 88 * 100)}%`;
+    ui.fuel.textContent = String(Math.max(0, Math.round(state.fuel)));
+    ui.fuelMeter.style.width = `${Math.max(0, state.fuel)}%`;
     ui.coins.textContent = String(state.coins);
+    ui.hornStatus.textContent = state.hornCooldown > 0 ? `${state.hornCooldown.toFixed(1)}s` : 'READY';
     ui.passengers.textContent = String(state.passengers);
     ui.passengerTitle.textContent = state.passengers ? 'Passenger onboard' : 'No passenger';
     ui.passengerDetail.textContent = state.passengers ? `${Math.max(0, Math.ceil(state.dropDistance - state.distance))} m to drop-off` : 'Look out for a pickup';
@@ -1194,6 +1311,7 @@ window.addEventListener('resize', () => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
 });
 
+renderLeaderboard();
 requestAnimationFrame(animate);
 setTimeout(() => ui.loading.classList.add('hidden'), 450);
 setTimeout(() => ui.loading.remove(), 1000);

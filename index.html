@@ -24,6 +24,8 @@
         <div class="hud-stats">
           <div class="stat"><span class="stat-label">SPEED</span><strong><span id="speed">48</span><small> km/h</small></strong><div class="speed-meter"><i id="speed-meter-fill"></i></div></div>
           <div class="stat coin-stat"><span class="stat-label">POCKET</span><strong><span class="coin-icon">₦</span><span id="coins">0</span></strong><small class="stat-caption">collected</small></div>
+          <div class="stat fuel-stat"><span class="stat-label">FUEL</span><strong><span id="fuel">100</span><small>%</small></strong><div class="fuel-meter"><i id="fuel-meter-fill"></i></div></div>
+          <div class="stat horn-stat"><span class="stat-label">HORN</span><strong id="horn-status">READY</strong></div>
         </div>
       </section>
 
@@ -53,13 +55,50 @@
         <div class="pedal-controls">
           <button class="control-button pedal-button brake-button" id="brake" aria-label="Brake" title="Brake"><span class="pedal-icon" aria-hidden="true">Ⅱ</span><span>BRAKE</span></button>
           <button class="control-button pedal-button faster-button" id="faster" aria-label="Go faster" title="Go faster"><span class="pedal-icon" aria-hidden="true">↗</span><span>FASTER</span></button>
+          <button class="control-button pedal-button horn-button" id="horn" aria-label="Sound the horn" title="Sound the horn"><span class="pedal-icon" aria-hidden="true">♫</span><span>HORN</span></button>
         </div>
       </footer>
+      <div class="start-screen" id="start-screen" aria-live="polite">
+        <div class="start-panel">
+          <span class="crash-kicker">UYO, AKWA IBOM</span>
+          <h1>Kekenapepe</h1>
+          <p class="start-tagline">No wahala, make we run!</p>
+          <div class="start-meta">
+            <div>
+              <span>Fuel</span>
+              <strong>100%</strong>
+            </div>
+            <div>
+              <span>Horn</span>
+              <strong>Ready</strong>
+            </div>
+          </div>
+          <button id="start-button" class="primary-button">START RUN <span aria-hidden="true">↗</span></button>
+          <div class="leaderboard-box">
+            <h2>Top riders</h2>
+            <ol id="leaderboard-list"></ol>
+          </div>
+        </div>
+      </div>
       <div class="crash-screen" id="crash-screen" hidden>
         <span class="crash-kicker">AH! E DON HAPPEN</span>
         <h1 id="crash-message">Even the keke needs a breather.</h1>
         <p id="final-score">You made it 0 m</p>
-        <button id="restart-button">RIDE AGAIN <span aria-hidden="true">↗</span></button>
+        <div class="save-box" aria-live="polite">
+          <label class="profile-field" for="save-name">
+            <span>Save your run</span>
+            <input id="save-name" type="text" maxlength="14" placeholder="Your username" aria-label="Username" />
+          </label>
+          <div class="save-actions">
+            <button id="save-score-button" class="secondary-button">SAVE SCORE</button>
+            <button id="share-x-button" class="secondary-button">SHARE X</button>
+            <button id="share-copy-button" class="secondary-button">COPY RESULT</button>
+          </div>
+        </div>
+        <div class="crash-actions">
+          <button id="revive-button" class="secondary-button" hidden>REVIVE <span aria-hidden="true">+1</span></button>
+          <button id="restart-button" class="primary-button">RIDE AGAIN <span aria-hidden="true">↗</span></button>
+        </div>
       </div>
       <div class="loading-screen" id="loading-screen" aria-live="polite">Warming up your keke<span>...</span></div>
     </main>

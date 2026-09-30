@@ -45,11 +45,13 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .stat { min-width: 72px; display: flex; flex-direction: column; gap: 3px; }
 .stat > strong { color: #243b30; font: 700 26px/.95 'Barlow Condensed',sans-serif; font-variant-numeric: tabular-nums; }
 .stat > strong small { color: #53695d; font: 700 10px 'DM Sans',sans-serif; }
-.speed-meter { width: 76px; height: 3px; overflow: hidden; background: rgba(39,83,59,.2); }
-.speed-meter i { display: block; width: 38%; height: 100%; background: var(--coral); transition: width .2s; }
+.speed-meter, .fuel-meter { width: 76px; height: 3px; overflow: hidden; background: rgba(39,83,59,.2); }
+.speed-meter i, .fuel-meter i { display: block; width: 38%; height: 100%; background: var(--coral); transition: width .2s; }
+.fuel-meter i { background: #f5bb4d; }
 .coin-stat { min-width: 47px; }
 .coin-icon { color: #e89a28; font-family: 'DM Sans',sans-serif; font-size: 18px; }
 .stat-caption { color: #64756b; font-size: 9px; }
+.horn-stat strong { font-size: 17px; }
 
 .mission { position: absolute; z-index: 1; top: 105px; right: 5.2%; width: 185px; display: grid; gap: 7px; padding: 12px 14px; border-left: 3px solid #e1ad28; background: rgba(250,255,247,.73); box-shadow: 0 6px 24px rgba(31,67,47,.05); }
 .mission-kicker { color: #687b6c; font-size: 8px; font-weight: 800; letter-spacing: 1.2px; }
@@ -94,8 +96,30 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .crash-kicker { color: var(--lime); font-size: 10px; font-weight: 800; letter-spacing: 2px; }
 .crash-screen h1 { max-width: 500px; margin: 12px 0 6px; font: 800 clamp(38px,7vw,66px)/.95 'Barlow Condensed',sans-serif; }
 .crash-screen p { margin: 8px 0 24px; color: #d9e9db; }
-.crash-screen button { padding: 13px 18px; border: 0; background: var(--lime); color: #243f30; font-weight: 800; cursor: pointer; }
-.crash-screen button span { padding-left: 12px; }
+.crash-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.primary-button, .secondary-button { padding: 13px 18px; border: 0; font-weight: 800; cursor: pointer; }
+.primary-button { background: var(--lime); color: #243f30; }
+.secondary-button { background: rgba(245,185,75,.16); color: #f2e7b1; border: 1px solid rgba(242,231,177,.32); }
+.primary-button span, .secondary-button span { padding-left: 12px; }
+.start-screen { position: absolute; z-index: 6; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(17,29,27,.54); backdrop-filter: blur(7px); }
+.start-screen.hidden { opacity: 0; pointer-events: none; }
+.start-panel { width: min(520px, 100%); display: grid; gap: 18px; padding: clamp(18px, 5vw, 34px); background: rgba(248,255,247,.92); border: 1px solid rgba(36,75,57,.12); box-shadow: 0 14px 38px rgba(16,38,30,.12); }
+.start-panel h1 { margin: 0; font: 800 clamp(38px,6vw,70px)/.9 'Barlow Condensed',sans-serif; color: #1d4032; }
+.start-tagline { margin: 0; color: #355a4c; font: 700 18px 'Barlow Condensed',sans-serif; letter-spacing: .06em; }
+.profile-field { display: grid; gap: 8px; color: #395a4a; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.profile-field input { width: 100%; padding: 12px 14px; border: 1px solid rgba(37,71,48,.17); background: rgba(255,255,255,.8); font: 700 18px 'DM Sans',sans-serif; color: #1f352d; }
+.start-meta { display: flex; gap: 16px; flex-wrap: wrap; }
+.start-meta div { display: grid; gap: 4px; min-width: 92px; padding: 8px 12px; background: rgba(27,56,46,.05); }
+.start-meta span { color: #597364; font-size: 8px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+.start-meta strong { color: #244636; font: 700 20px 'Barlow Condensed',sans-serif; }
+.leaderboard-box { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid rgba(36,75,57,.12); }
+.leaderboard-box h2 { margin: 0; color: #224635; font: 800 15px 'Barlow Condensed',sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+#leaderboard-list { margin: 0; padding-left: 18px; display: grid; gap: 6px; color: #284a3d; font: 700 13px 'DM Sans',sans-serif; }
+#leaderboard-list li { display: flex; justify-content: space-between; gap: 16px; }
+#leaderboard-list .empty-entry { opacity: 0.7; }
+.save-box { display: grid; gap: 10px; width: min(520px, 100%); margin: 0 auto 8px; padding: 14px 16px; background: rgba(31,60,43,.78); border: 1px solid rgba(255,255,255,.08); }
+.save-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.save-actions button { min-width: 120px; }
 .loading-screen { position: absolute; z-index: 8; inset: 0; display: grid; place-content: center; background: #b8e8c9; color: #234f39; font: 700 20px 'Barlow Condensed',sans-serif; transition: opacity .45s; }
 .loading-screen.hidden { opacity: 0; pointer-events: none; }
 .loading-screen span { color: #e5884d; }
@@ -122,7 +146,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .stat { min-width: 44px; }
   .coin-stat { min-width: 32px; }
   .stat > strong { font-size: 21px; }
-  .speed-meter { width: 48px; }
+  .speed-meter, .fuel-meter { width: 48px; }
   .ride-status { top: 224px; right: 17px; gap: 6px; padding: 6px; }
   .ride-status small { max-width: 112px; font-size: 8px; }
   .ride-status strong { font-size: 13px; }
@@ -137,6 +161,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .pedal-icon { font-size: 14px; }
   .landmark-label { top: 38%; }
   .toast { bottom: 86px; max-width: calc(100% - 28px); padding: 6px 9px; font-size: 11px; }
+  .save-actions { justify-content: flex-start; }
 }
 
 @media (max-height: 600px) and (min-width: 701px) {
