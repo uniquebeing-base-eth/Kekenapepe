@@ -1239,6 +1239,8 @@ function reviveRun() {
   state.wallet -= 200;
   state.nairaSpent += 200;
   state.active = true;
+  state.braking = false;
+  state.boosting = false;
   state.invincible = 3;
   state.fuel = Math.max(3, state.fuel);
   state.speed = 34;
@@ -1253,8 +1255,10 @@ function reviveRun() {
 
 function resetRun() {
   state.lane = 1;
-  state.lanePosition = 0;
+  state.lanePosition = lanes[1];
   state.speed = 48;
+  state.braking = false;
+  state.boosting = false;
   state.score = 0;
   state.coins = 0;
   state.distance = 0;
@@ -1513,8 +1517,6 @@ window.addEventListener('keyup', (event) => {
 window.addEventListener('blur', () => {
   state.boosting = false;
   state.braking = false;
-  state.braking = false;
-  state.boosting = false;
   keysDown.clear();
 });
 

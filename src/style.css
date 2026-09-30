@@ -46,10 +46,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .stat { min-width: 58px; display: flex; flex-direction: column; gap: 3px; }
 .stat > strong { color: #243b30; font: 700 22px/.95 'Barlow Condensed',sans-serif; font-variant-numeric: tabular-nums; }
 .stat > strong small { color: #53695d; font: 700 10px 'DM Sans',sans-serif; }
+.fuel-heading { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
 .speed-meter, .fuel-meter { width: 58px; height: 3px; overflow: hidden; background: rgba(39,83,59,.2); }
 .speed-meter i, .fuel-meter i { display: block; width: 38%; height: 100%; background: var(--coral); transition: width .2s; }
 .fuel-meter i { background: #f5bb4d; }
-.fuel-buy-button { align-self: flex-start; padding: 3px 5px; border: 1px solid rgba(39,83,59,.2); background: rgba(255,255,255,.7); color: #315844; font: 800 7px 'DM Sans',sans-serif; white-space: nowrap; cursor: pointer; user-select: none; -webkit-user-select: none; }
+.fuel-buy-button { padding: 2px 4px; border: 1px solid rgba(39,83,59,.2); background: rgba(255,255,255,.7); color: #315844; font: 800 7px 'DM Sans',sans-serif; white-space: nowrap; cursor: pointer; user-select: none; -webkit-user-select: none; }
 .fuel-buy-button:hover { background: #d5ef43; }
 .coin-stat { min-width: 47px; }
 .coin-icon { color: #e89a28; font-family: 'DM Sans',sans-serif; font-size: 18px; }
@@ -194,6 +195,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .hud-stats { gap: 6px; }
   .stat { min-width: 39px; }
   .coin-stat { min-width: 32px; }
+  .fuel-stat { min-width: 52px; }
   .stat > strong { font-size: 21px; }
   .speed-meter, .fuel-meter { width: 48px; }
   .ride-status { top: 224px; right: 17px; gap: 6px; padding: 6px; }
