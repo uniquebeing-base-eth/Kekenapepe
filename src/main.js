@@ -11,8 +11,8 @@ function setCameraFraming() {
   const narrowScreen = window.innerWidth < 700;
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.fov = narrowScreen ? 64 : 43;
-  camera.position.y = narrowScreen ? 5.8 : 5.5;
-  camera.position.z = narrowScreen ? 12.7 : 10.7;
+  camera.position.y = narrowScreen ? 5.6 : 5.3;
+  camera.position.z = narrowScreen ? 11.9 : 9.7;
   camera.updateProjectionMatrix();
 }
 setCameraFraming();
@@ -51,23 +51,26 @@ function roadCurve(z) {
   return 3.1 * Math.exp(-firstBend * firstBend) - 2.6 * Math.exp(-secondBend * secondBend);
 }
 
+const routeStart = -540;
+const routeLength = 1100;
+const sceneryLoopLength = 50 * 10.5;
 const roadMaterial = new THREE.MeshStandardMaterial({ color: colors.road, roughness: 0.94 });
-const roadGeometry = new THREE.PlaneGeometry(11.4, 820, 1, 200);
+const roadGeometry = new THREE.PlaneGeometry(11.4, routeLength, 1, 260);
 roadGeometry.rotateX(-Math.PI / 2);
 const roadPositions = roadGeometry.attributes.position;
 for (let i = 0; i < roadPositions.count; i += 1) {
-  const worldZ = -400 + roadPositions.getZ(i);
+  const worldZ = routeStart + roadPositions.getZ(i);
   roadPositions.setX(i, roadCurve(worldZ) + roadPositions.getX(i));
 }
 roadGeometry.computeVertexNormals();
 const road = new THREE.Mesh(roadGeometry, roadMaterial);
-road.position.set(0, -0.07, -400);
+road.position.set(0, -0.07, routeStart);
 road.receiveShadow = true;
 scene.add(road);
 
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(380, 900), new THREE.MeshStandardMaterial({ color: '#8fc894', roughness: 1 }));
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(380, routeLength + 180), new THREE.MeshStandardMaterial({ color: '#8fc894', roughness: 1 }));
 ground.rotation.x = -Math.PI / 2;
-ground.position.set(0, -0.16, -420);
+ground.position.set(0, -0.16, routeStart - 90);
 ground.receiveShadow = true;
 scene.add(ground);
 
@@ -76,7 +79,7 @@ const lanes = [-laneWidth, 0, laneWidth];
 const dashMaterial = new THREE.MeshStandardMaterial({ color: '#f8e5a1', roughness: 0.8 });
 const dashes = [];
 for (const x of [-laneWidth / 2, laneWidth / 2]) {
-  for (let i = 0; i < 22; i += 1) {
+  for (let i = 0; i < 75; i += 1) {
     const dash = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.018, 2.1), dashMaterial);
     dash.userData.laneMarkX = x;
     dash.position.set(roadCurve(9 - i * 7.2) + x, -0.015, 9 - i * 7.2);
@@ -85,16 +88,16 @@ for (const x of [-laneWidth / 2, laneWidth / 2]) {
   }
 }
 for (const x of [-5.58, 5.58]) {
-  const edgeGeometry = new THREE.PlaneGeometry(0.11, 820, 1, 200);
+  const edgeGeometry = new THREE.PlaneGeometry(0.11, routeLength, 1, 260);
   edgeGeometry.rotateX(-Math.PI / 2);
   const edgePositions = edgeGeometry.attributes.position;
   for (let i = 0; i < edgePositions.count; i += 1) {
-    const worldZ = -400 + edgePositions.getZ(i);
+    const worldZ = routeStart + edgePositions.getZ(i);
     edgePositions.setX(i, roadCurve(worldZ) + x + edgePositions.getX(i));
   }
   edgeGeometry.computeVertexNormals();
   const edge = new THREE.Mesh(edgeGeometry, new THREE.MeshStandardMaterial({ color: '#f2ead0' }));
-  edge.position.set(0, -0.01, -400);
+  edge.position.set(0, -0.01, routeStart);
   scene.add(edge);
 }
 
@@ -166,8 +169,8 @@ function createBuilding(x, z) {
 }
 
 const scenery = [];
-for (let i = 0; i < 30; i += 1) {
-  const z = 8 - i * 7.1;
+for (let i = 0; i < 50; i += 1) {
+  const z = 8 - i * 10.5;
   for (const side of [-1, 1]) {
     if (i % 3 === 0 || random() > 0.48) {
       const tree = createPalm(side * (8.4 + random() * 6), z - random() * 3, 0.72 + random() * 0.62);
@@ -181,6 +184,7 @@ for (let i = 0; i < 30; i += 1) {
 
 const cityLandmarks = [];
 const trafficSignals = [];
+const policeCheckpoints = [];
 
 function addCityLandmark(group, x, z, osmCoordinate = null) {
   group.position.set(x + roadCurve(z), 0, z);
@@ -357,20 +361,25 @@ function createPoliceCheckpoint(z) {
   makeBox(group, 4.7, 2.8, 3.1, new THREE.MeshStandardMaterial({ color: '#ddd3b8', roughness: 0.92 }), [9.5, 1.4, 0]);
   makeBox(group, 5.1, 0.26, 3.4, blue, [9.5, 2.9, 0]);
   makeBox(group, 3.2, 0.72, 0.12, blue, [9.5, 3.42, 1.62]);
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(3.02, 0.62), createSignMaterial('POLICE', 'CHECKPOINT AHEAD', '#344766'));
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(3.02, 0.62), createSignMaterial('POLICE', 'KEEP CENTER · CHECKPOINT', '#344766'));
   sign.position.set(9.5, 3.42, 1.69);
   group.add(sign);
   createPerson(group, 5.5, 2.3, '#344766', '#283449', 'police');
   createPerson(group, 7.3, 2.55, '#344766', '#283449', 'police');
-  makeBox(group, 0.18, 0.2, 4.1, blue, [4.7, 1.18, 4.2]);
-  makeBox(group, 5.5, 0.36, 0.22, red, [1.95, 1.34, 4.2]);
-  makeBox(group, 2.5, 0.37, 0.24, white, [0.0, 1.35, 4.2]);
+  makeBox(group, 0.18, 0.2, 4.1, blue, [5.3, 1.18, 4.2]);
+  for (let segment = 0; segment < 4; segment += 1) {
+    makeBox(group, 1.02, 0.36, 0.24, segment % 2 ? white : red, [-4.59 + segment * 1.02, 1.35, 4.2]);
+    makeBox(group, 1.02, 0.36, 0.24, segment % 2 ? red : white, [1.53 + segment * 1.02, 1.35, 4.2]);
+  }
   for (const coneX of [-2.2, -0.3, 1.6, 3.5]) {
     const cone = new THREE.Mesh(new THREE.ConeGeometry(0.38, 0.95, 6), new THREE.MeshStandardMaterial({ color: '#ec764b', roughness: 0.82 }));
     cone.position.set(coneX, 0.48, 4.8);
     group.add(cone);
   }
-  return addCityLandmark(group, 0, z, [5.02309, 7.90377]);
+  const checkpoint = addCityLandmark(group, 0, z, [5.02309, 7.90377]);
+  checkpoint.userData.barrierOffset = 4.2;
+  policeCheckpoints.push(checkpoint);
+  return checkpoint;
 }
 
 function createRoadWorks(z) {
@@ -572,6 +581,17 @@ createRoadSign('ABAK ROAD', 'WESTERN UYO', 6.8, -405, [5.02991, 7.91506]);
 createBusiness('FRESH SPRING HOTELS', 'ROOMS · RESTAURANT · LOUNGE', -11, -433, { wall: '#e7d1a7', trim: '#4c7e81', sign: '#306b70' }, [5.01539, 7.91701]);
 createStreetlight(-7.3, -441);
 createTownshipStadium(-462);
+createIntersection(-520);
+createTrafficSignal(-520);
+createRoadSign('ATIKU ABUBAKAR AVENUE', 'CENTRAL UYO', 6.8, -548, [5.0364, 7.90062]);
+createRoadSign('IKPA ROAD', 'UNIVERSITY DISTRICT', -6.8, -625, [5.05043, 7.9265]);
+createRoadSign('NWANIBA ROAD', 'ORON ROAD JUNCTION', 6.8, -705, [5.03279, 7.93103]);
+createIntersection(-770);
+createTrafficSignal(-770);
+createPoliceCheckpoint(-850);
+createRoadSign('IBB AVENUE', 'SOUTH UYO', -6.8, -795, [5.01834, 7.91132]);
+createRoadSign('ITAM ROAD', 'EASTERN UYO', 6.8, -875, [5.05399, 7.89907]);
+createRoadSign('NELSON MANDELA ROAD', 'IKOT EKPENE DISTRICT', -6.8, -960, [5.04552, 7.91508]);
 
 function createKeke(primary = false) {
   const group = new THREE.Group();
@@ -709,11 +729,9 @@ function spawnTraffic(z = -92) {
   vehicle.position.set(roadCurve(spawnZ) + lanes[lane], 0, spawnZ);
   vehicle.scale.setScalar(type === 'bus' ? 0.92 : type === 'bike' ? 1.06 : 0.98);
   scene.add(vehicle);
-  traffic.push({ mesh: vehicle, lane, lanePosition: vehicle.position.x, type, hitDepth: type === 'bus' ? 2.25 : type === 'bike' ? 0.85 : 1.25, speed: 2 + random() * 2.4 });
+  traffic.push({ mesh: vehicle, lane, lanePosition: vehicle.position.x, type, hitDepth: type === 'bus' ? 2.25 : type === 'bike' ? 0.85 : 1.25, hitWidth: type === 'bus' ? 1.7 : type === 'bike' ? 0.92 : 1.35, speed: 2 + random() * 2.4 });
 }
-spawnTraffic(-42);
-spawnTraffic(-78);
-spawnTraffic(-112);
+for (let index = 0; index < 10; index += 1) spawnTraffic(-48 - index * 35);
 
 const pickups = [];
 function createPickup(kind, lane, z) {
@@ -748,7 +766,7 @@ const ui = {
   crashMessage: document.querySelector('#crash-message'), finalScore: document.querySelector('#final-score'), loading: document.querySelector('#loading-screen'),
 };
 
-const streets = ['Abak Road', 'Ikot Ekpene Road', 'Aka Road', 'Wellington Bassey Way', 'Oron Road', 'Nwaniba Road'];
+const streets = ['Abak Road', 'Ikot Ekpene Road', 'Aka Road', 'Wellington Bassey Way', 'Atiku Abubakar Avenue', 'Oron Road', 'Nwaniba Road', 'Ikpa Road', 'IBB Avenue', 'Itam Road', 'Nelson Mandela Road'];
 const coinPointValue = 50;
 const crashMessages = [
   'Even the keke needs a breather.', 'My brother, the road no be yours alone!', 'This keke don collect.', 'Omo, that one pain small.',
@@ -973,6 +991,17 @@ function animate(now) {
       if (landmark.position.z > 18) landmark.position.z -= 560;
       landmark.position.x = roadCurve(landmark.position.z) + landmark.userData.roadsideX;
     }
+    for (const checkpoint of policeCheckpoints) {
+      const barrierDistance = checkpoint.position.z + checkpoint.userData.barrierOffset - player.position.z;
+      const checkpointLaneOffset = player.position.x - checkpoint.position.x;
+      if (Math.abs(barrierDistance) < 1.1 && Math.abs(checkpointLaneOffset) > 1.05) {
+        endRun('You hit the police checkpoint barrier. Run over.');
+      }
+      if (object.position.z > 18) object.position.z -= sceneryLoopLength;
+      if (landmark.position.z > 18) landmark.position.z -= routeLength;
+      const cruisingSpeed = Math.min(68, 48 + Math.floor(state.distance / 360) * 4);
+      const targetSpeed = state.braking ? 25 : state.boosting ? Math.min(100, cruisingSpeed + 34) : cruisingSpeed;
+    }
     const roundaboutDistance = roundaboutLandmark.position.z - player.position.z;
     if (roundaboutDistance > -1.5 && roundaboutDistance < 1.5 && state.lane === 1) {
       endRun('You hit the roundabout island. Choose an outer lane next time.');
@@ -994,16 +1023,16 @@ function animate(now) {
         item.mesh.position.x = item.lanePosition;
       }
       for (const wheel of item.mesh.userData.wheels) wheel.rotation.x += (forward - item.speed * delta) * 0.75;
-      if (item.mesh.position.z > player.position.z - item.hitDepth && item.mesh.position.z < player.position.z + item.hitDepth && Math.abs(item.mesh.position.x - player.position.x) < 1.18) {
+      if (item.mesh.position.z > player.position.z - item.hitDepth && item.mesh.position.z < player.position.z + item.hitDepth && Math.abs(item.mesh.position.x - player.position.x) < item.hitWidth) {
         endRun();
         break;
       }
       if (item.mesh.position.z > 16) {
         item.lane = Math.floor(random() * 3);
-        item.mesh.position.z = -95 - random() * 38;
+        item.mesh.position.z = -105 - random() * 165;
         item.lanePosition = roadCurve(item.mesh.position.z) + lanes[item.lane];
         item.mesh.position.x = item.lanePosition;
-        item.speed = 2 + random() * 2.4;
+        item.speed = 2 + random() * 2.4 + Math.min(4, state.distance / 450);
       }
     }
 
