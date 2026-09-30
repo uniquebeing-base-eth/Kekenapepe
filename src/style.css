@@ -1,0 +1,140 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+  font-family: 'DM Sans', sans-serif;
+  color: #192b26;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --ink: #192b26;
+  --green: #1e7552;
+  --lime: #d5ef43;
+  --coral: #f26f4e;
+}
+
+* { box-sizing: border-box; }
+
+body { margin: 0; min-width: 320px; overflow: hidden; }
+
+button, a { -webkit-tap-highlight-color: transparent; }
+
+#game { position: relative; width: 100vw; height: 100dvh; min-height: 520px; overflow: hidden; isolation: isolate; background: #b8e8c9; }
+#game canvas { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; display: block; }
+.world-wash { position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(180deg,rgba(245,255,240,.48),transparent 25%,transparent 70%,rgba(20,49,39,.16)); }
+
+.topbar { position: absolute; z-index: 2; top: 0; left: 0; right: 0; height: 82px; padding: 0 5.2%; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(35,70,52,.11); background: linear-gradient(180deg,rgba(246,255,245,.76),rgba(246,255,245,.22)); backdrop-filter: blur(10px); }
+.brand { display: flex; gap: 11px; align-items: center; color: var(--ink); text-decoration: none; }
+.brand-mark { width: 39px; height: 39px; display: grid; place-items: center; border-radius: 12px 12px 12px 4px; background: var(--lime); color: #224635; font: 900 27px/.9 'Barlow Condensed',sans-serif; transform: rotate(-5deg); }
+.brand-copy { display: grid; gap: 1px; }
+.brand-copy strong { font: 800 21px/.95 'Barlow Condensed',sans-serif; letter-spacing: .2px; }
+.brand-copy small { color: #63756b; font-size: 9px; font-weight: 800; letter-spacing: 1.2px; }
+.route-pill { position: absolute; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; align-items: center; padding: 10px 14px; border: 1px solid rgba(36,75,57,.13); border-radius: 4px; background: rgba(248,255,248,.65); font-size: 12px; font-weight: 800; box-shadow: 0 4px 18px rgba(37,74,55,.05); }
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: #f26f4e; box-shadow: 0 0 0 3px rgba(242,111,78,.14); }
+.route-divider { color: #91a197; }
+.route-district { color: #63756b; font-size: 9px; letter-spacing: 1.2px; }
+.sound-button { width: 38px; height: 38px; border: 1px solid rgba(36,75,57,.15); border-radius: 50%; color: #275641; background: rgba(248,255,248,.58); font-size: 20px; cursor: pointer; }
+.sound-button.is-muted { color: #7d8a81; }
+
+.hud { position: absolute; z-index: 1; top: 104px; left: 5.2%; display: flex; align-items: stretch; gap: 28px; }
+.score-block { display: grid; grid-template-columns: auto auto; column-gap: 14px; align-items: baseline; padding-right: 24px; border-right: 1px solid rgba(32,67,49,.18); }
+.eyebrow,.stat-label { color: #50675c; font-size: 9px; font-weight: 800; letter-spacing: 1.6px; }
+.score-block .eyebrow { grid-column: 1 / -1; }
+.score-block > strong { font: 700 42px/.95 'Barlow Condensed',sans-serif; font-variant-numeric: tabular-nums; }
+.score-best { color: #64756b; font-size: 9px; font-weight: 700; }
+.score-best b { color: #324d40; }
+.hud-stats { display: flex; gap: 24px; }
+.stat { min-width: 72px; display: flex; flex-direction: column; gap: 3px; }
+.stat > strong { color: #243b30; font: 700 26px/.95 'Barlow Condensed',sans-serif; font-variant-numeric: tabular-nums; }
+.stat > strong small { color: #53695d; font: 700 10px 'DM Sans',sans-serif; }
+.speed-meter { width: 76px; height: 3px; overflow: hidden; background: rgba(39,83,59,.2); }
+.speed-meter i { display: block; width: 38%; height: 100%; background: var(--coral); transition: width .2s; }
+.coin-stat { min-width: 47px; }
+.coin-icon { color: #e89a28; font-family: 'DM Sans',sans-serif; font-size: 18px; }
+.stat-caption { color: #64756b; font-size: 9px; }
+
+.mission { position: absolute; z-index: 1; top: 105px; right: 5.2%; width: 185px; display: grid; gap: 7px; padding: 12px 14px; border-left: 3px solid #e1ad28; background: rgba(250,255,247,.73); box-shadow: 0 6px 24px rgba(31,67,47,.05); }
+.mission-kicker { color: #687b6c; font-size: 8px; font-weight: 800; letter-spacing: 1.2px; }
+.mission-icon { color: #e1ad28; font-size: 12px; }
+.mission > strong { font: 700 18px/1 'Barlow Condensed',sans-serif; }
+.mission-progress { height: 3px; background: #dce7d8; }
+.mission-progress span { display: block; width: 0; height: 100%; background: #e1ad28; transition: width .2s; }
+.mission > small { color: #718075; font-size: 9px; }
+
+.ride-status { position: absolute; z-index: 1; top: 205px; right: 5.2%; display: flex; gap: 9px; align-items: center; padding: 8px 10px; background: rgba(249,255,247,.66); }
+.ride-icon { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 50%; background: #d7efe0; color: #377353; font-size: 17px; }
+.ride-status > span:nth-child(2) { display: grid; gap: 2px; }
+.ride-status strong { font: 700 14px/1 'Barlow Condensed',sans-serif; }
+.ride-status small { color: #718075; font-size: 9px; }
+.ride-count { min-width: 21px; height: 21px; display: grid; place-items: center; border-radius: 50%; background: var(--lime); font-size: 11px; font-weight: 800; }
+
+.landmark-label { position: absolute; z-index: 1; left: 50%; top: 35%; display: grid; justify-items: center; gap: 3px; opacity: 0; transform: translate(-50%,9px); transition: .5s; pointer-events: none; }
+.landmark-label.visible { opacity: 1; transform: translate(-50%,0); }
+.landmark-label span { width: 1px; height: 24px; background: #28533d; }
+.landmark-label strong { padding: 6px 9px 4px; background: var(--lime); color: #284333; font: 800 14px 'Barlow Condensed',sans-serif; letter-spacing: .5px; }
+.landmark-label small { color: white; font-size: 8px; font-weight: 800; letter-spacing: 1px; text-shadow: 0 1px 5px #1b3828; }
+.toast { position: absolute; z-index: 2; left: 50%; top: 23%; padding: 10px 16px; background: #203f30; color: white; font: 700 15px 'Barlow Condensed',sans-serif; opacity: 0; transform: translate(-50%,-6px); transition: .2s; pointer-events: none; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translate(-50%,0); }
+
+.controls { position: absolute; z-index: 2; left: 5.2%; right: 5.2%; bottom: 29px; display: flex; align-items: flex-end; justify-content: space-between; }
+.control-hint { display: flex; align-items: center; gap: 5px; padding-bottom: 8px; color: #445d4d; }
+.keyboard-key { width: 24px; height: 24px; display: grid; place-items: center; border: 1px solid rgba(37,71,48,.23); border-radius: 4px; background: rgba(249,255,247,.56); font: 700 16px 'DM Sans',sans-serif; }
+.control-hint small { margin-left: 4px; font-size: 8px; font-weight: 800; letter-spacing: 1px; }
+.steering-controls,.pedal-controls { display: flex; gap: 9px; }
+.steering-controls { position: absolute; left: 50%; transform: translateX(-50%); }
+.control-button { border: 1px solid rgba(37,71,48,.17); color: #244636; background: rgba(249,255,247,.78); box-shadow: 0 5px 17px rgba(30,61,44,.11); cursor: pointer; touch-action: none; transition: transform .12s,background .12s; }
+.control-button:active,.control-button.pressed { transform: translateY(2px); background: var(--lime); }
+.steer-button { width: 51px; height: 51px; border-radius: 50%; font-size: 24px; }
+.pedal-button { height: 43px; min-width: 96px; display: flex; align-items: center; justify-content: center; gap: 7px; border-radius: 4px; font-size: 9px; font-weight: 800; letter-spacing: .7px; }
+.pedal-icon { font-size: 16px; }
+.brake-button { color: #9c4939; }
+.faster-button { border-color: #d5ef43; background: #d5ef43; }
+
+.crash-screen { position: absolute; z-index: 5; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; background: rgba(31,60,43,.82); color: white; backdrop-filter: blur(7px); }
+.crash-screen[hidden] { display: none; }
+.crash-kicker { color: var(--lime); font-size: 10px; font-weight: 800; letter-spacing: 2px; }
+.crash-screen h1 { max-width: 500px; margin: 12px 0 6px; font: 800 clamp(38px,7vw,66px)/.95 'Barlow Condensed',sans-serif; }
+.crash-screen p { margin: 8px 0 24px; color: #d9e9db; }
+.crash-screen button { padding: 13px 18px; border: 0; background: var(--lime); color: #243f30; font-weight: 800; cursor: pointer; }
+.crash-screen button span { padding-left: 12px; }
+.loading-screen { position: absolute; z-index: 8; inset: 0; display: grid; place-content: center; background: #b8e8c9; color: #234f39; font: 700 20px 'Barlow Condensed',sans-serif; transition: opacity .45s; }
+.loading-screen.hidden { opacity: 0; pointer-events: none; }
+.loading-screen span { color: #e5884d; }
+
+@media (max-width: 700px) {
+  #game { min-height: 480px; }
+  .topbar { height: 65px; padding: 0 17px; }
+  .brand-mark { width: 34px; height: 34px; font-size: 24px; }
+  .brand-copy strong { font-size: 18px; }
+  .brand-copy small { font-size: 7px; }
+  .route-pill { top: 74px; left: 17px; transform: none; gap: 7px; padding: 8px 10px; font-size: 10px; }
+  .route-district { font-size: 8px; }
+  .sound-button { width: 34px; height: 34px; }
+  .hud { top: 122px; left: 18px; gap: 14px; }
+  .score-block { padding-right: 14px; column-gap: 7px; }
+  .score-block > strong { font-size: 34px; }
+  .score-best { font-size: 8px; }
+  .hud-stats { gap: 12px; }
+  .stat { min-width: 52px; }
+  .stat > strong { font-size: 23px; }
+  .mission { top: 74px; right: 17px; width: 143px; gap: 5px; padding: 8px 9px; }
+  .mission-kicker { font-size: 7px; }
+  .mission > strong { font-size: 16px; }
+  .ride-status { top: 193px; right: 17px; gap: 6px; padding: 6px; }
+  .ride-status small { max-width: 104px; font-size: 8px; }
+  .ride-status strong { font-size: 13px; }
+  .ride-icon { width: 23px; height: 23px; }
+  .controls { left: 17px; right: 17px; bottom: max(17px,env(safe-area-inset-bottom)); }
+  .control-hint { display: none; }
+  .steering-controls { left: 0; transform: none; gap: 7px; }
+  .steer-button { width: 49px; height: 49px; }
+  .pedal-controls { gap: 6px; }
+  .pedal-button { min-width: 72px; height: 42px; gap: 4px; font-size: 8px; }
+  .pedal-icon { font-size: 14px; }
+  .landmark-label { top: 38%; }
+}
+
+@media (max-height: 600px) and (min-width: 701px) {
+  .topbar { height: 64px; }
+  .hud,.mission { top: 82px; }
+  .ride-status { top: 175px; }
+  .controls { bottom: 16px; }
+}

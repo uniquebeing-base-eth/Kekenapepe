@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#b8e8c9" />
+    <meta name="description" content="Cruise the streets of Uyo in a low-poly keke endless-driving game." />
+    <title>Kekenapepe: Uyo Run</title>
+  </head>
+  <body>
+    <main id="game" aria-label="Kekenapepe endless driving game">
+      <div class="world-wash" aria-hidden="true"></div>
+      <header class="topbar">
+        <a class="brand" href="#game" aria-label="Kekenapepe home">
+          <span class="brand-mark" aria-hidden="true">K</span>
+          <span class="brand-copy"><strong>kekenapepe</strong><small>UYO, AKWA IBOM</small></span>
+        </a>
+        <div class="route-pill"><span class="live-dot"></span><span id="street-name">Aka Road</span><span class="route-divider">/</span><span class="route-district">CITY RUN</span></div>
+        <button class="sound-button" id="sound-toggle" aria-label="Toggle sound" title="Toggle sound"><span aria-hidden="true">♪</span></button>
+      </header>
+
+      <section class="hud" aria-label="Run status">
+        <div class="score-block"><span class="eyebrow">RUN SCORE</span><strong id="score">000000</strong><span class="score-best">BEST <b id="best-score">000000</b></span></div>
+        <div class="hud-stats">
+          <div class="stat"><span class="stat-label">SPEED</span><strong><span id="speed">48</span><small> km/h</small></strong><div class="speed-meter"><i id="speed-meter-fill"></i></div></div>
+          <div class="stat coin-stat"><span class="stat-label">POCKET</span><strong><span class="coin-icon">₦</span><span id="coins">0</span></strong><small class="stat-caption">collected</small></div>
+        </div>
+      </section>
+
+      <aside class="mission" aria-live="polite">
+        <span class="mission-kicker"><span class="mission-icon" aria-hidden="true">✦</span> TODAY'S RUN</span>
+        <strong id="mission-title">Reach Ibom Plaza</strong>
+        <div class="mission-progress"><span id="mission-progress"></span></div>
+        <small id="mission-detail">0 / 400 m</small>
+      </aside>
+
+      <section class="ride-status" aria-live="polite">
+        <span class="ride-icon" aria-hidden="true">♙</span>
+        <span><strong id="passenger-title">No passenger</strong><small id="passenger-detail">Look out for a pickup</small></span>
+        <span class="ride-count" id="passenger-count">0</span>
+      </section>
+
+      <div class="landmark-label" id="landmark-label" aria-hidden="true"><span></span><strong>IBOM PLAZA</strong><small>UYO CITY CENTRE</small></div>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+      <footer class="controls" aria-label="Driving controls">
+        <div class="control-hint"><span class="keyboard-key">←</span><span class="keyboard-key">→</span><small>CHANGE LANE</small></div>
+        <div class="steering-controls">
+          <button class="control-button steer-button" id="steer-left" aria-label="Move left" title="Move left"><span aria-hidden="true">←</span></button>
+          <button class="control-button steer-button" id="steer-right" aria-label="Move right" title="Move right"><span aria-hidden="true">→</span></button>
+        </div>
+        <div class="pedal-controls">
+          <button class="control-button pedal-button brake-button" id="brake" aria-label="Brake" title="Brake"><span class="pedal-icon" aria-hidden="true">Ⅱ</span><span>BRAKE</span></button>
+          <button class="control-button pedal-button faster-button" id="faster" aria-label="Go faster" title="Go faster"><span class="pedal-icon" aria-hidden="true">↗</span><span>FASTER</span></button>
+        </div>
+      </footer>
+      <div class="crash-screen" id="crash-screen" hidden>
+        <span class="crash-kicker">AH! E DON HAPPEN</span>
+        <h1 id="crash-message">Even the keke needs a breather.</h1>
+        <p id="final-score">You made it 0 m</p>
+        <button id="restart-button">RIDE AGAIN <span aria-hidden="true">↗</span></button>
+      </div>
+      <div class="loading-screen" id="loading-screen" aria-live="polite">Warming up your keke<span>...</span></div>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
