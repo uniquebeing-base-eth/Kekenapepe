@@ -7,7 +7,15 @@ scene.background = new THREE.Color('#b8e8c9');
 scene.fog = new THREE.Fog('#b8e8c9', 38, 135);
 
 const camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 220);
-camera.position.set(0, 5.7, 12.8);
+function setCameraFraming() {
+  const narrowScreen = window.innerWidth < 700;
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.fov = narrowScreen ? 76 : 48;
+  camera.position.y = narrowScreen ? 7.2 : 5.7;
+  camera.position.z = narrowScreen ? 21.8 : 12.8;
+  camera.updateProjectionMatrix();
+}
+setCameraFraming();
 camera.lookAt(0, 1.1, -9);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -37,9 +45,22 @@ const colors = {
   roof: '#bd6650', wall: '#f2d7a1', mint: '#c5e4c9', cream: '#f4e8c9',
 };
 const mats = Object.fromEntries(Object.entries(colors).map(([key, color]) => [key, new THREE.MeshStandardMaterial({ color, roughness: 0.92 })]));
+function roadCurve(z) {
+  const firstBend = (z + 206) / 56;
+  const secondBend = (z + 382) / 48;
+  return 3.1 * Math.exp(-firstBend * firstBend) - 2.6 * Math.exp(-secondBend * secondBend);
+}
+
 const roadMaterial = new THREE.MeshStandardMaterial({ color: colors.road, roughness: 0.94 });
-const road = new THREE.Mesh(new THREE.PlaneGeometry(11.4, 820), roadMaterial);
-road.rotation.x = -Math.PI / 2;
+const roadGeometry = new THREE.PlaneGeometry(11.4, 820, 1, 200);
+roadGeometry.rotateX(-Math.PI / 2);
+const roadPositions = roadGeometry.attributes.position;
+for (let i = 0; i < roadPositions.count; i += 1) {
+  const worldZ = -400 + roadPositions.getZ(i);
+  roadPositions.setX(i, roadCurve(worldZ) + roadPositions.getX(i));
+}
+roadGeometry.computeVertexNormals();
+const road = new THREE.Mesh(roadGeometry, roadMaterial);
 road.position.set(0, -0.07, -400);
 road.receiveShadow = true;
 scene.add(road);
@@ -57,14 +78,23 @@ const dashes = [];
 for (const x of [-laneWidth / 2, laneWidth / 2]) {
   for (let i = 0; i < 22; i += 1) {
     const dash = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.018, 2.1), dashMaterial);
-    dash.position.set(x, -0.015, 9 - i * 7.2);
+    dash.userData.laneMarkX = x;
+    dash.position.set(roadCurve(9 - i * 7.2) + x, -0.015, 9 - i * 7.2);
     scene.add(dash);
     dashes.push(dash);
   }
 }
 for (const x of [-5.58, 5.58]) {
-  const edge = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.025, 820), new THREE.MeshStandardMaterial({ color: '#f2ead0' }));
-  edge.position.set(x, -0.01, -400);
+  const edgeGeometry = new THREE.PlaneGeometry(0.11, 820, 1, 200);
+  edgeGeometry.rotateX(-Math.PI / 2);
+  const edgePositions = edgeGeometry.attributes.position;
+  for (let i = 0; i < edgePositions.count; i += 1) {
+    const worldZ = -400 + edgePositions.getZ(i);
+    edgePositions.setX(i, roadCurve(worldZ) + x + edgePositions.getX(i));
+  }
+  edgeGeometry.computeVertexNormals();
+  const edge = new THREE.Mesh(edgeGeometry, new THREE.MeshStandardMaterial({ color: '#f2ead0' }));
+  edge.position.set(0, -0.01, -400);
   scene.add(edge);
 }
 
@@ -88,6 +118,7 @@ function makeBox(parent, width, height, depth, material, position, castShadow = 
 function createPalm(x, z, scale = 1) {
   const palm = new THREE.Group();
   palm.position.set(x, 0, z);
+  palm.userData.roadsideX = x;
   palm.scale.setScalar(scale);
   const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.29, 4, 6), new THREE.MeshStandardMaterial({ color: '#956746', roughness: 1 }));
   trunk.position.y = 2;
@@ -112,6 +143,7 @@ function createPalm(x, z, scale = 1) {
 function createBuilding(x, z) {
   const group = new THREE.Group();
   group.position.set(x, 0, z);
+  group.userData.roadsideX = x;
   const width = 5.4 + random() * 5.5;
   const height = 5 + random() * 8;
   const depth = 6 + random() * 7;
@@ -148,9 +180,12 @@ for (let i = 0; i < 30; i += 1) {
 }
 
 const cityLandmarks = [];
+const trafficSignals = [];
 
 function addCityLandmark(group, x, z, osmCoordinate = null) {
-  group.position.set(x, 0, z);
+  group.position.set(x + roadCurve(z), 0, z);
+  group.userData.roadsideX = x;
+  group.userData.startX = group.position.x;
   group.userData.startZ = z;
   group.userData.osmCoordinate = osmCoordinate;
   scene.add(group);
@@ -208,26 +243,179 @@ function createIntersection(z) {
   return addCityLandmark(group, 0, z);
 }
 
+function createTrafficSignal(z) {
+  const group = new THREE.Group();
+  const metal = new THREE.MeshStandardMaterial({ color: '#45524a', roughness: 0.78 });
+  const housing = new THREE.MeshStandardMaterial({ color: '#303934', roughness: 0.65 });
+  makeBox(group, 0.2, 5.4, 0.2, metal, [-6.8, 2.7, 0]);
+  makeBox(group, 7.1, 0.18, 0.18, metal, [-3.25, 5.2, 0]);
+  makeBox(group, 0.54, 1.62, 0.58, housing, [-0.2, 4.22, 0]);
+  const bulbs = {};
+  const lightColors = { red: '#e9483f', amber: '#f2b83d', green: '#5ed36f' };
+  for (const [index, [name, value]] of Object.entries(lightColors).entries()) {
+    const bulbMaterial = new THREE.MeshStandardMaterial({ color: value, emissive: value, emissiveIntensity: 0.04, roughness: 0.4 });
+    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.17, 10, 8), bulbMaterial);
+    bulb.position.set(-0.2, 4.75 - index * 0.52, 0.31);
+    group.add(bulb);
+    bulbs[name] = bulbMaterial;
+  }
+  trafficSignals.push(bulbs);
+  return addCityLandmark(group, 0, z);
+}
+
+function createStreetlight(x, z) {
+  const group = new THREE.Group();
+  const steel = new THREE.MeshStandardMaterial({ color: '#657164', roughness: 0.78 });
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.2, 6.8, 7), steel);
+  post.position.y = 3.4;
+  post.castShadow = true;
+  group.add(post);
+  const arm = makeBox(group, 1.9, 0.13, 0.13, steel, [x > 0 ? -0.78 : 0.78, 6.55, 0]);
+  arm.rotation.z = x > 0 ? -0.16 : 0.16;
+  const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.18, 0.32), new THREE.MeshStandardMaterial({ color: '#f3e3aa', emissive: '#9c7840', emissiveIntensity: 0.32, roughness: 0.45 }));
+  lamp.position.set(x > 0 ? -1.55 : 1.55, 6.28, 0);
+  group.add(lamp);
+  return addCityLandmark(group, x, z);
+}
+
+function createPerson(parent, x, z, shirtColor, trousersColor, role = 'civilian') {
+  const person = new THREE.Group();
+  person.position.set(x, 0, z);
+  const shirt = new THREE.MeshStandardMaterial({ color: shirtColor, roughness: 0.88, flatShading: true });
+  const trousers = new THREE.MeshStandardMaterial({ color: trousersColor, roughness: 0.93, flatShading: true });
+  const skin = new THREE.MeshStandardMaterial({ color: '#86583f', roughness: 0.95, flatShading: true });
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.82, 0.32), shirt);
+  torso.position.y = 1.02;
+  torso.castShadow = true;
+  person.add(torso);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 9, 7), skin);
+  head.position.y = 1.62;
+  head.castShadow = true;
+  person.add(head);
+  for (const side of [-1, 1]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.68, 0.23), trousers);
+    leg.position.set(side * 0.15, 0.37, 0);
+    person.add(leg);
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.64, 0.2), shirt);
+    arm.position.set(side * 0.38, 1.02, 0.03);
+    arm.rotation.z = side * -0.14;
+    person.add(arm);
+  }
+  if (role === 'worker') {
+    const hardhat = new THREE.Mesh(new THREE.SphereGeometry(0.24, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#f0bd36', roughness: 0.76 }));
+    hardhat.position.y = 1.78;
+    person.add(hardhat);
+    makeBox(person, 0.58, 0.13, 0.35, new THREE.MeshStandardMaterial({ color: '#e8d97b', emissive: '#897b35', emissiveIntensity: 0.08 }), [0, 1.04, 0.18], false);
+  } else if (role === 'police') {
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.22, 0.18, 8), new THREE.MeshStandardMaterial({ color: '#253a59', roughness: 0.82 }));
+    cap.position.y = 1.79;
+    person.add(cap);
+    makeBox(person, 0.48, 0.1, 0.05, new THREE.MeshStandardMaterial({ color: '#d7b852', roughness: 0.65 }), [0, 1.23, 0.17], false);
+  }
+  parent.add(person);
+  return person;
+}
+
+function createBusiness(name, descriptor, x, z, colors, osmCoordinate) {
+  const group = new THREE.Group();
+  const wall = new THREE.MeshStandardMaterial({ color: colors.wall, roughness: 0.9, flatShading: true });
+  const trim = new THREE.MeshStandardMaterial({ color: colors.trim, roughness: 0.82 });
+  makeBox(group, 8.5, 4.4, 5.6, wall, [0, 2.2, 0]);
+  makeBox(group, 8.8, 0.34, 5.9, trim, [0, 4.48, 0]);
+  makeBox(group, 8.7, 0.22, 5.86, trim, [0, 0.65, 2.84]);
+  for (const windowX of [-2.75, -0.95, 2.45]) {
+    makeBox(group, 1.35, 1.55, 0.08, new THREE.MeshStandardMaterial({ color: '#73aa9b', roughness: 0.42 }), [windowX, 2.45, 2.84], false);
+    makeBox(group, 1.46, 0.13, 0.16, trim, [windowX, 3.28, 2.9], false);
+  }
+  makeBox(group, 1.15, 2.35, 0.12, new THREE.MeshStandardMaterial({ color: '#754c39', roughness: 0.84 }), [0.85, 1.85, 2.88]);
+  makeBox(group, 7.2, 0.88, 0.22, new THREE.MeshStandardMaterial({ color: colors.sign, roughness: 0.76 }), [0, 3.76, 2.91]);
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(6.95, 0.7), createSignMaterial(name, descriptor, colors.sign));
+  face.position.set(0, 3.76, 3.035);
+  group.add(face);
+  const roadsideSignX = Math.sign(x) * 5.2 - x;
+  const roadsideBoard = makeBox(group, 4.4, 0.76, 0.18, new THREE.MeshStandardMaterial({ color: colors.sign, roughness: 0.76 }), [roadsideSignX, 2.7, 4.35]);
+  roadsideBoard.castShadow = false;
+  const roadsideFace = new THREE.Mesh(new THREE.PlaneGeometry(4.18, 0.62), createSignMaterial(name, descriptor, colors.sign));
+  roadsideFace.position.set(roadsideSignX, 2.7, 4.455);
+  group.add(roadsideFace);
+  makeBox(group, 8.6, 0.32, 0.78, trim, [0, 3.02, 3.15]);
+  for (const tableX of [-3.1, 3.4]) {
+    const table = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.12, 10), new THREE.MeshStandardMaterial({ color: '#e7d2a6', roughness: 0.88 }));
+    table.position.set(tableX, 0.95, 4.7);
+    group.add(table);
+    makeBox(group, 0.12, 0.88, 0.12, trim, [tableX, 0.49, 4.7]);
+    createPerson(group, tableX + 0.9, 4.55, '#d98642', '#37483d');
+  }
+  return addCityLandmark(group, x, z, osmCoordinate);
+}
+
+function createPoliceCheckpoint(z) {
+  const group = new THREE.Group();
+  const blue = new THREE.MeshStandardMaterial({ color: '#344766', roughness: 0.88 });
+  const white = new THREE.MeshStandardMaterial({ color: '#e8e0c6', roughness: 0.9 });
+  const red = new THREE.MeshStandardMaterial({ color: '#cf5544', roughness: 0.82 });
+  makeBox(group, 4.7, 2.8, 3.1, new THREE.MeshStandardMaterial({ color: '#ddd3b8', roughness: 0.92 }), [9.5, 1.4, 0]);
+  makeBox(group, 5.1, 0.26, 3.4, blue, [9.5, 2.9, 0]);
+  makeBox(group, 3.2, 0.72, 0.12, blue, [9.5, 3.42, 1.62]);
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(3.02, 0.62), createSignMaterial('POLICE', 'CHECKPOINT AHEAD', '#344766'));
+  sign.position.set(9.5, 3.42, 1.69);
+  group.add(sign);
+  createPerson(group, 5.5, 2.3, '#344766', '#283449', 'police');
+  createPerson(group, 7.3, 2.55, '#344766', '#283449', 'police');
+  makeBox(group, 0.18, 0.2, 4.1, blue, [4.7, 1.18, 4.2]);
+  makeBox(group, 5.5, 0.36, 0.22, red, [1.95, 1.34, 4.2]);
+  makeBox(group, 2.5, 0.37, 0.24, white, [0.0, 1.35, 4.2]);
+  for (const coneX of [-2.2, -0.3, 1.6, 3.5]) {
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.38, 0.95, 6), new THREE.MeshStandardMaterial({ color: '#ec764b', roughness: 0.82 }));
+    cone.position.set(coneX, 0.48, 4.8);
+    group.add(cone);
+  }
+  return addCityLandmark(group, 0, z, [5.02309, 7.90377]);
+}
+
+function createRoadWorks(z) {
+  const group = new THREE.Group();
+  const scaffold = new THREE.MeshStandardMaterial({ color: '#56675b', roughness: 0.85 });
+  const wall = new THREE.MeshStandardMaterial({ color: '#d1b987', roughness: 0.95, flatShading: true });
+  for (let level = 0; level < 3; level += 1) {
+    makeBox(group, 0.12, 2.2, 0.12, scaffold, [8.3, 1.1 + level * 2.1, 0]);
+    makeBox(group, 0.12, 2.2, 0.12, scaffold, [12.4, 1.1 + level * 2.1, 0]);
+    makeBox(group, 4.2, 0.12, 0.12, scaffold, [10.35, 2.1 + level * 2.1, 0]);
+    makeBox(group, 4.2, 0.1, 0.1, scaffold, [10.35, 0.12 + level * 2.1, 0]);
+  }
+  makeBox(group, 5.1, 5.1, 4.3, wall, [10.4, 2.55, -3]);
+  makeBox(group, 5.5, 0.32, 0.3, new THREE.MeshStandardMaterial({ color: '#e6b43e', roughness: 0.9 }), [10.3, 5.3, -0.75]);
+  const warning = new THREE.Mesh(new THREE.PlaneGeometry(4.7, 0.66), createSignMaterial('ROAD WORKS', 'PEDESTRIANS AT WORK', '#b45a36'));
+  warning.position.set(10.3, 5.3, -0.57);
+  group.add(warning);
+  createPerson(group, 7.3, 2.2, '#3d7853', '#303c35', 'worker');
+  createPerson(group, 13.2, 2.7, '#e26e45', '#343f38', 'worker');
+  for (const x of [4.6, 6.2, 14.8, 16.4]) {
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.86, 6), new THREE.MeshStandardMaterial({ color: '#ed7549', roughness: 0.82 }));
+    cone.position.set(x, 0.43, 3.6);
+    group.add(cone);
+  }
+  for (let brick = 0; brick < 4; brick += 1) makeBox(group, 0.56, 0.32, 0.3, new THREE.MeshStandardMaterial({ color: '#a9563b', roughness: 0.94 }), [7.0 + (brick % 2) * 0.56, 0.16 + Math.floor(brick / 2) * 0.32, 4.8]);
+  return addCityLandmark(group, 0, z, [5.03702, 7.93128]);
+}
+
 function createRoundabout(z, osmCoordinate) {
   const group = new THREE.Group();
-  const roundaboutX = 18;
-  const approach = new THREE.Mesh(new THREE.BoxGeometry(18, 0.06, 3.6), roadMaterial);
-  approach.position.set(9, -0.035, 0);
-  approach.receiveShadow = true;
-  group.add(approach);
-  for (const branchZ of [-7.1, 7.1]) {
-    const branch = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.06, 7), roadMaterial);
-    branch.position.set(roundaboutX, -0.035, branchZ);
+  const roundaboutX = 0;
+  const branchMaterial = new THREE.MeshStandardMaterial({ color: '#424b48', roughness: 0.94 });
+  for (const side of [-1, 1]) {
+    const branch = new THREE.Mesh(new THREE.BoxGeometry(20, 0.06, 5.4), branchMaterial);
+    branch.position.set(side * 11.6, -0.035, 0);
     branch.receiveShadow = true;
     group.add(branch);
   }
   const ringMaterial = new THREE.MeshStandardMaterial({ color: '#464e49', roughness: 0.96, side: THREE.DoubleSide });
-  const ring = new THREE.Mesh(new THREE.RingGeometry(3.05, 5.1, 40), ringMaterial);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(2.5, 6.6, 64), ringMaterial);
   ring.rotation.x = -Math.PI / 2;
   ring.position.set(roundaboutX, -0.005, 0);
   ring.receiveShadow = true;
   group.add(ring);
-  const island = new THREE.Mesh(new THREE.CylinderGeometry(3.03, 3.35, 0.32, 32), new THREE.MeshStandardMaterial({ color: '#83aa65', roughness: 1 }));
+  const island = new THREE.Mesh(new THREE.CylinderGeometry(2.46, 2.7, 0.32, 40), new THREE.MeshStandardMaterial({ color: '#83aa65', roughness: 1 }));
   island.position.set(roundaboutX, 0.1, 0);
   island.castShadow = true;
   island.receiveShadow = true;
@@ -246,6 +434,22 @@ function createRoundabout(z, osmCoordinate) {
     shrub.castShadow = true;
     group.add(shrub);
   }
+  const lineMaterial = new THREE.MeshStandardMaterial({ color: '#f5e9cb', roughness: 0.9 });
+  const arc = new THREE.Mesh(new THREE.TorusGeometry(5.55, 0.07, 5, 72), lineMaterial);
+  arc.rotation.x = Math.PI / 2;
+  arc.position.y = 0.035;
+  group.add(arc);
+  for (const side of [-1, 1]) {
+    const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.38, 0.95, 3), lineMaterial);
+    arrow.rotation.z = -Math.PI / 2;
+    arrow.position.set(side * 8.1, 0.04, -3.3);
+    group.add(arrow);
+  }
+  const exitBoard = makeBox(group, 4.6, 0.92, 0.18, new THREE.MeshStandardMaterial({ color: '#1c543e' }), [-8.2, 3.15, -0.2]);
+  exitBoard.castShadow = false;
+  const exitFace = new THREE.Mesh(new THREE.PlaneGeometry(4.38, 0.74), createSignMaterial('ROUNDABOUT', 'KEEP LEFT · CHOOSE EXIT'));
+  exitFace.position.set(-8.2, 3.15, -0.095);
+  group.add(exitFace);
   return addCityLandmark(group, 0, z, osmCoordinate);
 }
 
@@ -343,14 +547,26 @@ function createTownshipStadium(z) {
 
 createRoadSign('IKOT EKPENE ROAD', 'UYO CITY CENTRE', -6.8, -24, [5.0389, 7.9095]);
 createIntersection(-52);
+createTrafficSignal(-52);
+createStreetlight(-7.3, -28);
+createStreetlight(7.3, -81);
 createRoadSign('AKA ROAD', 'CITY CENTRE', 6.8, -77, [5.03335, 7.92875]);
-createRoundabout(-122, [5.03279, 7.93103]);
+const roundaboutLandmark = createRoundabout(-122, [5.03279, 7.93103]);
 createRoadSign('ORON ROAD / NWANIBA', 'ROUNDABOUT AHEAD', -6.8, -112, [5.03279, 7.93103]);
+createStreetlight(-7.3, -159);
 createUniversityGate(-180);
+createBusiness('NIGHT FAST FOOD', 'HOT GRILLS · COLD DRINKS', -11, -210, { wall: '#e9c98b', trim: '#bf623c', sign: '#bd4c34' }, [5.02266, 7.93877]);
 createPlazaLandmark(-238);
+createTrafficSignal(-262);
+createBusiness('CALWINO BAR', 'CHOPS · COLD DRINKS', 11, -274, { wall: '#d9c68e', trim: '#527c54', sign: '#315d42' }, [5.0277, 7.93017]);
+createRoadWorks(-298);
+createPoliceCheckpoint(-338);
 createRoadSign('WELLINGTON BASSEY WAY', 'BARRACKS ROAD', -6.8, -298, [5.03702, 7.93128]);
+createStreetlight(7.3, -325);
 createSecretariat(-350);
 createRoadSign('ABAK ROAD', 'WESTERN UYO', 6.8, -405, [5.02991, 7.91506]);
+createBusiness('FRESH SPRING HOTELS', 'ROOMS · RESTAURANT · LOUNGE', -11, -433, { wall: '#e7d1a7', trim: '#4c7e81', sign: '#306b70' }, [5.01539, 7.91701]);
+createStreetlight(-7.3, -441);
 createTownshipStadium(-462);
 
 function createKeke(primary = false) {
@@ -476,7 +692,7 @@ function createTrafficVehicle(type) {
 }
 
 const player = createKeke(true);
-player.position.set(0, 0, 3.4);
+player.position.set(roadCurve(3.4), 0, 3.4);
 player.scale.setScalar(1.08);
 scene.add(player);
 
@@ -485,7 +701,8 @@ function spawnTraffic(z = -92) {
   const type = ['keke', 'bike', 'bus'][traffic.length % 3];
   const vehicle = createTrafficVehicle(type);
   const lane = Math.floor(random() * lanes.length);
-  vehicle.position.set(lanes[lane], 0, z - random() * 22);
+  const spawnZ = z - random() * 22;
+  vehicle.position.set(roadCurve(spawnZ) + lanes[lane], 0, spawnZ);
   vehicle.scale.setScalar(type === 'bus' ? 0.92 : type === 'bike' ? 1.06 : 0.98);
   scene.add(vehicle);
   traffic.push({ mesh: vehicle, lane, type, hitDepth: type === 'bus' ? 2.25 : type === 'bike' ? 0.85 : 1.25, speed: 2 + random() * 2.4 });
@@ -497,7 +714,7 @@ spawnTraffic(-112);
 const pickups = [];
 function createPickup(kind, lane, z) {
   const group = new THREE.Group();
-  group.position.set(lanes[lane], 0, z);
+  group.position.set(roadCurve(z) + lanes[lane], 0, z);
   if (kind === 'coin') {
     const coin = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.12, 10), new THREE.MeshStandardMaterial({ color: '#ffd64b', metalness: 0.38, roughness: 0.28 }));
     coin.rotation.x = Math.PI / 2;
@@ -525,6 +742,7 @@ const ui = {
   passengerTitle: document.querySelector('#passenger-title'), passengerDetail: document.querySelector('#passenger-detail'), passengers: document.querySelector('#passenger-count'),
   toast: document.querySelector('#toast'), landmark: document.querySelector('#landmark-label'), crash: document.querySelector('#crash-screen'),
   crashMessage: document.querySelector('#crash-message'), finalScore: document.querySelector('#final-score'), loading: document.querySelector('#loading-screen'),
+  roundabout: document.querySelector('#roundabout-prompt'),
 };
 
 const streets = ['Abak Road', 'Ikot Ekpene Road', 'Aka Road', 'Wellington Bassey Way', 'Oron Road', 'Nwaniba Road'];
@@ -535,7 +753,7 @@ const crashMessages = [
 const state = {
   lane: 1, lanePosition: 0, speed: 48, score: 0, coins: 0, distance: 0, time: 0,
   active: true, braking: false, boosting: false, passengers: 0, dropDistance: null,
-  nextPickup: 1.5, streetIndex: 1, toastTimer: null, missionStage: 0, roadTime: 0,
+  nextPickup: 1.5, streetIndex: 1, toastTimer: null, missionStage: 0, roadTime: 0, roundaboutAnnounced: false,
 };
 let bestScore = Number(localStorage.getItem('kekenapepe-best') || 0);
 ui.best.textContent = String(bestScore).padStart(6, '0');
@@ -560,6 +778,7 @@ function changeLane(direction) {
 function endRun(reason = null) {
   if (!state.active) return;
   state.active = false;
+  ui.roundabout.hidden = true;
   if (soundEnabled) playCrash();
   const final = Math.floor(state.score);
   if (final > bestScore) {
@@ -587,25 +806,31 @@ function resetRun() {
   state.streetIndex = 1;
   state.missionStage = 0;
   state.roadTime = 0;
+  state.roundaboutAnnounced = false;
   if (engineGain && soundEnabled) engineGain.gain.setTargetAtTime(0.035, audioContext.currentTime, 0.08);
-  player.position.set(0, 0, 3.4);
+  player.position.set(roadCurve(3.4), 0, 3.4);
   camera.position.x = 0;
   camera.lookAt(0, 1.1, -9);
   for (const item of traffic) {
     item.mesh.position.z = -42 - random() * 70;
     item.lane = Math.floor(random() * 3);
-    item.mesh.position.x = lanes[item.lane];
     item.collected = false;
+    item.mesh.position.x = roadCurve(item.mesh.position.z) + lanes[item.lane];
   }
-  for (const landmark of cityLandmarks) landmark.position.z = landmark.userData.startZ;
+  for (const landmark of cityLandmarks) {
+    landmark.position.z = landmark.userData.startZ;
+    landmark.position.x = landmark.userData.startX;
+  }
   for (const [index, item] of pickups.entries()) {
     item.taken = false;
     item.kind = index % 5 === 4 ? 'passenger' : 'coin';
     item.lane = Math.floor(random() * 3);
-    item.mesh.position.set(lanes[item.lane], 0, -16 - index * 12.5);
+    const pickupZ = -16 - index * 12.5;
+    item.mesh.position.set(roadCurve(pickupZ) + lanes[item.lane], 0, pickupZ);
     item.mesh.visible = true;
   }
   ui.crash.hidden = true;
+  ui.roundabout.hidden = true;
   ui.street.textContent = streets[1];
   ui.mission.textContent = 'Reach Ibom Plaza';
   ui.progress.style.width = '0%';
@@ -707,6 +932,11 @@ function animate(now) {
   previousTime = now;
   if (state.active) {
     state.time += delta;
+    const signalPhase = state.time % 9;
+    const activeSignal = signalPhase < 4.8 ? 'green' : signalPhase < 5.8 ? 'amber' : 'red';
+    for (const signal of trafficSignals) {
+      for (const [name, material] of Object.entries(signal)) material.emissiveIntensity = name === activeSignal ? 1.5 : 0.04;
+    }
     const targetSpeed = state.braking ? 25 : state.boosting ? 88 : 48;
     state.speed = THREE.MathUtils.damp(state.speed, targetSpeed, 2.8, delta);
     if (soundEnabled && engineOscillator) {
@@ -717,8 +947,8 @@ function animate(now) {
     state.distance += forward;
     state.score += forward * 1.35;
     state.lanePosition = THREE.MathUtils.damp(state.lanePosition, lanes[state.lane], 10, delta);
-    player.position.x = state.lanePosition;
-    const cameraX = THREE.MathUtils.damp(camera.position.x, state.lanePosition, 5, delta);
+    player.position.x = roadCurve(player.position.z) + state.lanePosition;
+    const cameraX = THREE.MathUtils.damp(camera.position.x, player.position.x, 5, delta);
     camera.position.x = cameraX;
     camera.lookAt(cameraX, 1.1, -9);
     player.position.y = Math.sin(state.time * 13) * 0.035;
@@ -728,18 +958,36 @@ function animate(now) {
     for (const dash of dashes) {
       dash.position.z += forward;
       if (dash.position.z > 12) dash.position.z -= dashes.length / 2 * 7.2;
+      dash.position.x = roadCurve(dash.position.z) + dash.userData.laneMarkX;
     }
     for (const object of scenery) {
       object.position.z += forward;
       if (object.position.z > 18) object.position.z -= 30 * 7.1;
+      object.position.x = roadCurve(object.position.z) + object.userData.roadsideX;
     }
     for (const landmark of cityLandmarks) {
       landmark.position.z += forward;
       if (landmark.position.z > 18) landmark.position.z -= 560;
+      landmark.position.x = roadCurve(landmark.position.z) + landmark.userData.roadsideX;
+    }
+    const roundaboutDistance = roundaboutLandmark.position.z - player.position.z;
+    if (roundaboutDistance > -12 && roundaboutDistance < 42) {
+      ui.roundabout.hidden = false;
+      if (!state.roundaboutAnnounced) {
+        state.roundaboutAnnounced = true;
+        showToast('Roundabout ahead. Swipe left for Aka Road or right for Oron Road.');
+      }
+    } else {
+      ui.roundabout.hidden = true;
+      if (roundaboutDistance < -18) state.roundaboutAnnounced = false;
+    }
+    if (roundaboutDistance > -1.5 && roundaboutDistance < 1.5 && state.lane === 1) {
+      endRun('You hit the roundabout island. Choose an outer lane next time.');
     }
 
     for (const item of traffic) {
       item.mesh.position.z += (forward - item.speed * delta);
+      item.mesh.position.x = roadCurve(item.mesh.position.z) + lanes[item.lane];
       for (const wheel of item.mesh.userData.wheels) wheel.rotation.x += (forward - item.speed * delta) * 0.75;
       if (item.mesh.position.z > player.position.z - item.hitDepth && item.mesh.position.z < player.position.z + item.hitDepth && Math.abs(item.mesh.position.x - player.position.x) < 1.18) {
         endRun();
@@ -747,8 +995,8 @@ function animate(now) {
       }
       if (item.mesh.position.z > 16) {
         item.lane = Math.floor(random() * 3);
-        item.mesh.position.x = lanes[item.lane];
         item.mesh.position.z = -95 - random() * 38;
+        item.mesh.position.x = roadCurve(item.mesh.position.z) + lanes[item.lane];
         item.speed = 2 + random() * 2.4;
       }
     }
@@ -759,7 +1007,8 @@ function animate(now) {
       if (availablePickup) {
         availablePickup.taken = false;
         availablePickup.lane = Math.floor(random() * 3);
-        availablePickup.mesh.position.set(lanes[availablePickup.lane], 0, -110 - random() * 35);
+        const pickupZ = -110 - random() * 35;
+        availablePickup.mesh.position.set(roadCurve(pickupZ) + lanes[availablePickup.lane], 0, pickupZ);
         availablePickup.mesh.visible = true;
       }
       state.nextPickup = 0.9 + random() * 0.7;
@@ -767,6 +1016,7 @@ function animate(now) {
     for (const item of pickups) {
       if (item.taken) continue;
       item.mesh.position.z += forward;
+      item.mesh.position.x = roadCurve(item.mesh.position.z) + lanes[item.lane];
       if (item.kind === 'coin') {
         const coin = item.mesh.children[0];
         coin.rotation.y += delta * 2.4;
@@ -904,8 +1154,7 @@ function playCrash() {
 }
 
 window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
+  setCameraFraming();
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
 });

@@ -72,6 +72,16 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .landmark-label strong { padding: 6px 9px 4px; background: var(--lime); color: #284333; font: 800 14px 'Barlow Condensed',sans-serif; letter-spacing: .5px; }
 .landmark-label small { color: white; font-size: 8px; font-weight: 800; letter-spacing: 1px; text-shadow: 0 1px 5px #1b3828; }
 .toast { position: absolute; z-index: 2; left: 50%; top: 23%; padding: 10px 16px; background: #203f30; color: white; font: 700 15px 'Barlow Condensed',sans-serif; opacity: 0; transform: translate(-50%,-6px); transition: .2s; pointer-events: none; white-space: nowrap; }
+.roundabout-prompt { position: absolute; z-index: 3; top: 31%; left: 50%; width: min(352px,calc(100% - 34px)); display: grid; gap: 7px; padding: 12px 15px; border-left: 3px solid var(--lime); background: rgba(25,53,39,.93); color: #f3f3da; box-shadow: 0 8px 28px rgba(22,45,32,.22); transform: translateX(-50%); }
+.roundabout-prompt[hidden] { display: none; }
+.roundabout-kicker { color: var(--lime); font-size: 8px; font-weight: 800; }
+.roundabout-prompt > strong { font: 700 21px/1 'Barlow Condensed',sans-serif; }
+.roundabout-exits { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.roundabout-exits span { display: grid; gap: 2px; }
+.roundabout-exits b { color: white; font-size: 8px; }
+.roundabout-exits small,.roundabout-note { color: #c5d4c7; font-size: 9px; }
+.roundabout-exits i { color: var(--lime); font-size: 19px; font-style: normal; }
+.roundabout-note { padding-top: 4px; border-top: 1px solid rgba(236,244,221,.18); }
 .toast.show { opacity: 1; transform: translate(-50%,0); }
 
 .controls { position: absolute; z-index: 2; left: 5.2%; right: 5.2%; bottom: 29px; display: flex; align-items: flex-end; justify-content: space-between; }
@@ -135,6 +145,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .pedal-button { min-width: 72px; height: 42px; gap: 4px; font-size: 8px; }
   .pedal-icon { font-size: 14px; }
   .landmark-label { top: 38%; }
+  .roundabout-prompt { top: 32%; padding: 10px 12px; }
+  .roundabout-prompt > strong { font-size: 19px; }
+  .roundabout-exits b { font-size: 7px; }
+  .roundabout-exits small,.roundabout-note { font-size: 8px; }
 }
 
 @media (max-height: 600px) and (min-width: 701px) {
