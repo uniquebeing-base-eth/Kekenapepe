@@ -35,24 +35,24 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .sound-button { width: 38px; height: 38px; border: 1px solid rgba(36,75,57,.15); border-radius: 50%; color: #275641; background: rgba(248,255,248,.58); font-size: 20px; cursor: pointer; }
 .sound-button.is-muted { color: #7d8a81; }
 
-.hud { position: absolute; z-index: 1; top: 104px; left: 5.2%; display: flex; align-items: stretch; gap: 28px; }
-.score-block { display: grid; grid-template-columns: auto auto; column-gap: 14px; align-items: baseline; padding-right: 24px; border-right: 1px solid rgba(32,67,49,.18); }
+.hud { position: absolute; z-index: 1; top: 98px; left: 5.2%; display: flex; align-items: stretch; gap: 16px; padding: 7px 10px; background: rgba(248,255,247,.48); backdrop-filter: blur(8px); }
+.score-block { display: grid; grid-template-columns: auto auto; column-gap: 9px; align-items: baseline; padding-right: 14px; border-right: 1px solid rgba(32,67,49,.18); }
 .eyebrow,.stat-label { color: #50675c; font-size: 9px; font-weight: 800; letter-spacing: 1.6px; }
 .score-block .eyebrow { grid-column: 1 / -1; }
-.score-block > strong { font: 700 42px/.95 'Barlow Condensed',sans-serif; font-variant-numeric: tabular-nums; }
+.score-block > strong { font: 700 34px/.95 'Barlow Condensed',sans-serif; font-variant-numeric: tabular-nums; }
 .score-best { color: #64756b; font-size: 9px; font-weight: 700; }
 .score-best b { color: #324d40; }
-.hud-stats { display: flex; gap: 24px; }
-.stat { min-width: 72px; display: flex; flex-direction: column; gap: 3px; }
-.stat > strong { color: #243b30; font: 700 26px/.95 'Barlow Condensed',sans-serif; font-variant-numeric: tabular-nums; }
+.hud-stats { display: flex; gap: 13px; }
+.stat { min-width: 58px; display: flex; flex-direction: column; gap: 3px; }
+.stat > strong { color: #243b30; font: 700 22px/.95 'Barlow Condensed',sans-serif; font-variant-numeric: tabular-nums; }
 .stat > strong small { color: #53695d; font: 700 10px 'DM Sans',sans-serif; }
-.speed-meter, .fuel-meter { width: 76px; height: 3px; overflow: hidden; background: rgba(39,83,59,.2); }
+.speed-meter, .fuel-meter { width: 58px; height: 3px; overflow: hidden; background: rgba(39,83,59,.2); }
 .speed-meter i, .fuel-meter i { display: block; width: 38%; height: 100%; background: var(--coral); transition: width .2s; }
 .fuel-meter i { background: #f5bb4d; }
 .coin-stat { min-width: 47px; }
 .coin-icon { color: #e89a28; font-family: 'DM Sans',sans-serif; font-size: 18px; }
 .stat-caption { color: #64756b; font-size: 9px; }
-.horn-stat strong { font-size: 17px; }
+.horn-stat strong { font-size: 13px; }
 
 .mission { position: absolute; z-index: 1; top: 105px; right: 5.2%; width: 185px; display: grid; gap: 7px; padding: 12px 14px; border-left: 3px solid #e1ad28; background: rgba(250,255,247,.73); box-shadow: 0 6px 24px rgba(31,67,47,.05); }
 .mission-kicker { color: #687b6c; font-size: 8px; font-weight: 800; letter-spacing: 1.2px; }
@@ -174,12 +174,12 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .mission-kicker { font-size: 7px; }
   .mission > strong { font-size: 16px; }
   .mission > small { font-size: 8px; }
-  .hud { top: 164px; left: 17px; right: 17px; justify-content: space-between; gap: 8px; }
+  .hud { top: 164px; left: 17px; right: 17px; justify-content: space-between; gap: 6px; padding: 5px 7px; }
   .score-block { padding-right: 9px; column-gap: 5px; }
-  .score-block > strong { font-size: 32px; }
+  .score-block > strong { font-size: 29px; }
   .score-best { font-size: 7px; }
-  .hud-stats { gap: 8px; }
-  .stat { min-width: 44px; }
+  .hud-stats { gap: 6px; }
+  .stat { min-width: 39px; }
   .coin-stat { min-width: 32px; }
   .stat > strong { font-size: 21px; }
   .speed-meter, .fuel-meter { width: 48px; }
