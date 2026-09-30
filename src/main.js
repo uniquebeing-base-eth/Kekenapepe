@@ -343,19 +343,25 @@ function showToast(message) {
 
 function changeLane(direction) {
   if (!state.active) return;
-  state.lane = THREE.MathUtils.clamp(state.lane + direction, 0, 2);
+  const nextLane = state.lane + direction;
+  if (nextLane < 0 || nextLane > 2) {
+    endRun('You drifted into the roadside!');
+    return;
+  }
+  state.lane = nextLane;
 }
 
-function endRun() {
+function endRun(reason = null) {
   if (!state.active) return;
   state.active = false;
+  if (soundEnabled) playCrash();
   const final = Math.floor(state.score);
   if (final > bestScore) {
     bestScore = final;
     localStorage.setItem('kekenapepe-best', String(bestScore));
   }
   ui.best.textContent = String(bestScore).padStart(6, '0');
-  ui.crashMessage.textContent = crashMessages[Math.floor(random() * crashMessages.length)];
+  ui.crashMessage.textContent = reason || crashMessages[Math.floor(random() * crashMessages.length)];
   ui.finalScore.textContent = `You made it ${Math.floor(state.distance)} m · ${final} points · ₦${state.coins * 50} collected`;
   ui.crash.hidden = false;
 }
@@ -375,6 +381,7 @@ function resetRun() {
   state.streetIndex = 0;
   state.missionStage = 0;
   state.roadTime = 0;
+  if (engineGain && soundEnabled) engineGain.gain.setTargetAtTime(0.035, audioContext.currentTime, 0.08);
   player.position.set(0, 0, 3.4);
   camera.position.x = 0;
   camera.lookAt(0, 1.1, -9);
@@ -441,11 +448,24 @@ gameElement.addEventListener('pointercancel', () => { swipeStart = null; });
 
 let soundEnabled = false;
 let audioContext = null;
+let masterGain = null;
+let engineOscillator = null;
+let engineGain = null;
+let musicTimer = null;
+let musicStep = 0;
 document.querySelector('#sound-toggle').addEventListener('click', (event) => {
   soundEnabled = !soundEnabled;
   event.currentTarget.classList.toggle('is-muted', !soundEnabled);
   event.currentTarget.setAttribute('aria-label', soundEnabled ? 'Mute sound' : 'Enable sound');
-  if (soundEnabled) showToast('Radio on. Enjoy the ride!');
+  event.currentTarget.title = soundEnabled ? 'Mute sound' : 'Enable sound';
+  event.currentTarget.setAttribute('aria-pressed', String(soundEnabled));
+  if (soundEnabled) {
+    startAudio();
+    showToast('Engine and music on. Enjoy the ride!');
+  } else {
+    stopAudio();
+    showToast('Sound off');
+  }
 });
 
 const keysDown = new Set();
@@ -481,6 +501,9 @@ function animate(now) {
     state.time += delta;
     const targetSpeed = state.braking ? 25 : state.boosting ? 88 : 48;
     state.speed = THREE.MathUtils.damp(state.speed, targetSpeed, 2.8, delta);
+    if (soundEnabled && engineOscillator) {
+      engineOscillator.frequency.setTargetAtTime(52 + state.speed * 1.15, audioContext.currentTime, 0.08);
+    }
     const flow = state.speed / 48;
     const forward = 12.2 * flow * delta;
     state.distance += forward;
@@ -577,7 +600,7 @@ function animate(now) {
     } else if (state.missionStage === 1) {
       if (streetIndex === 1) state.roadTime += delta;
       ui.progress.style.width = `${Math.min(100, state.roadTime / 60 * 100)}%`;
-      ui.detail.textContent = `${Math.min(60, Math.floor(state.roadTime))} / 60 sec on Ikot Ekpene Road`;
+      ui.detail.textContent = `${Math.min(60, Math.floor(state.roadTime))} / 60 sec · Ikot Ekpene`;
       if (state.roadTime >= 60) {
         state.missionStage = 2;
         state.score += 300;
@@ -600,19 +623,72 @@ function animate(now) {
   renderer.render(scene, camera);
 }
 
-function playChime() {
+function startAudio() {
   audioContext ||= new AudioContext();
+  if (audioContext.state === 'suspended') audioContext.resume();
+  if (!masterGain) {
+    masterGain = audioContext.createGain();
+    masterGain.gain.value = 0.0001;
+    masterGain.connect(audioContext.destination);
+  }
+  masterGain.gain.setTargetAtTime(0.62, audioContext.currentTime, 0.12);
+  if (!engineOscillator) {
+    const filter = audioContext.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 190;
+    engineOscillator = audioContext.createOscillator();
+    engineOscillator.type = 'sawtooth';
+    engineOscillator.frequency.value = 105;
+    engineGain = audioContext.createGain();
+    engineGain.gain.value = 0.035;
+    engineOscillator.connect(filter);
+    filter.connect(engineGain);
+    engineGain.connect(masterGain);
+    engineOscillator.start();
+  }
+  if (!musicTimer) musicTimer = setInterval(playMusicStep, 230);
+}
+
+function stopAudio() {
+  if (masterGain && audioContext) masterGain.gain.setTargetAtTime(0.0001, audioContext.currentTime, 0.08);
+}
+
+function playTone(frequency, duration, type = 'sine', volume = 0.05, delay = 0) {
+  if (!soundEnabled || !audioContext || !masterGain) return;
+  const start = audioContext.currentTime + delay;
   const oscillator = audioContext.createOscillator();
   const gain = audioContext.createGain();
-  oscillator.type = 'sine';
-  oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
-  oscillator.frequency.exponentialRampToValueAtTime(1320, audioContext.currentTime + 0.08);
-  gain.gain.setValueAtTime(0.09, audioContext.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.18);
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(frequency, start);
+  gain.gain.setValueAtTime(volume, start);
+  gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
   oscillator.connect(gain);
-  gain.connect(audioContext.destination);
+  gain.connect(masterGain);
   oscillator.start();
-  oscillator.stop(audioContext.currentTime + 0.19);
+  oscillator.stop(start + duration + 0.02);
+}
+
+function playMusicStep() {
+  if (!soundEnabled) return;
+  const melody = [220, 0, 261.63, 329.63, 0, 293.66, 261.63, 0, 196, 0, 261.63, 293.66, 0, 329.63, 293.66, 0];
+  const bass = [110, 0, 0, 0, 130.81, 0, 0, 0, 98, 0, 0, 0, 146.83, 0, 0, 0];
+  const step = musicStep % melody.length;
+  if (melody[step]) playTone(melody[step], 0.19, 'triangle', 0.05);
+  if (bass[step]) playTone(bass[step], 0.36, 'sine', 0.075);
+  if (step % 4 === 2) playTone(1450, 0.045, 'square', 0.008);
+  musicStep += 1;
+}
+
+function playChime() {
+  playTone(880, 0.13, 'sine', 0.1);
+  playTone(1320, 0.18, 'sine', 0.075, 0.07);
+}
+
+function playCrash() {
+  engineGain.gain.setTargetAtTime(0.008, audioContext.currentTime, 0.06);
+  playTone(220, 0.2, 'sawtooth', 0.11);
+  playTone(146.83, 0.24, 'triangle', 0.09, 0.12);
+  playTone(82.41, 0.36, 'sawtooth', 0.12, 0.25);
 }
 
 window.addEventListener('resize', () => {

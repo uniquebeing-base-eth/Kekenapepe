@@ -54,16 +54,16 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .mission { position: absolute; z-index: 1; top: 105px; right: 5.2%; width: 185px; display: grid; gap: 7px; padding: 12px 14px; border-left: 3px solid #e1ad28; background: rgba(250,255,247,.73); box-shadow: 0 6px 24px rgba(31,67,47,.05); }
 .mission-kicker { color: #687b6c; font-size: 8px; font-weight: 800; letter-spacing: 1.2px; }
 .mission-icon { color: #e1ad28; font-size: 12px; }
-.mission > strong { font: 700 18px/1 'Barlow Condensed',sans-serif; }
+.mission > strong { font: 700 18px/1.08 'Barlow Condensed',sans-serif; overflow-wrap: anywhere; }
 .mission-progress { height: 3px; background: #dce7d8; }
 .mission-progress span { display: block; width: 0; height: 100%; background: #e1ad28; transition: width .2s; }
-.mission > small { color: #718075; font-size: 9px; }
+.mission > small { color: #718075; font-size: 9px; line-height: 1.2; }
 
 .ride-status { position: absolute; z-index: 1; top: 205px; right: 5.2%; display: flex; gap: 9px; align-items: center; padding: 8px 10px; background: rgba(249,255,247,.66); }
 .ride-icon { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 50%; background: #d7efe0; color: #377353; font-size: 17px; }
 .ride-status > span:nth-child(2) { display: grid; gap: 2px; }
 .ride-status strong { font: 700 14px/1 'Barlow Condensed',sans-serif; }
-.ride-status small { color: #718075; font-size: 9px; }
+.ride-status small { color: #718075; font-size: 9px; line-height: 1.2; }
 .ride-count { min-width: 21px; height: 21px; display: grid; place-items: center; border-radius: 50%; background: var(--lime); font-size: 11px; font-weight: 800; }
 
 .landmark-label { position: absolute; z-index: 1; left: 50%; top: 35%; display: grid; justify-items: center; gap: 3px; opacity: 0; transform: translate(-50%,9px); transition: .5s; pointer-events: none; }
@@ -103,21 +103,25 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .brand-mark { width: 34px; height: 34px; font-size: 24px; }
   .brand-copy strong { font-size: 18px; }
   .brand-copy small { font-size: 7px; }
-  .route-pill { top: 74px; left: 17px; transform: none; gap: 7px; padding: 8px 10px; font-size: 10px; }
-  .route-district { font-size: 8px; }
+  .route-pill { top: 74px; left: 17px; right: calc(clamp(132px, 42vw, 154px) + 34px); min-width: 0; justify-content: flex-start; transform: none; gap: 7px; padding: 8px 10px; font-size: 10px; }
+  .route-pill #street-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .route-divider,.route-district { display: none; }
   .sound-button { width: 34px; height: 34px; }
-  .hud { top: 122px; left: 18px; gap: 14px; }
-  .score-block { padding-right: 14px; column-gap: 7px; }
-  .score-block > strong { font-size: 34px; }
-  .score-best { font-size: 8px; }
-  .hud-stats { gap: 12px; }
-  .stat { min-width: 52px; }
-  .stat > strong { font-size: 23px; }
-  .mission { top: 74px; right: 17px; width: 143px; gap: 5px; padding: 8px 9px; }
+  .mission { top: 74px; right: 17px; width: clamp(132px, 42vw, 154px); gap: 5px; padding: 8px 9px; }
   .mission-kicker { font-size: 7px; }
   .mission > strong { font-size: 16px; }
-  .ride-status { top: 193px; right: 17px; gap: 6px; padding: 6px; }
-  .ride-status small { max-width: 104px; font-size: 8px; }
+  .mission > small { font-size: 8px; }
+  .hud { top: 164px; left: 17px; right: 17px; justify-content: space-between; gap: 8px; }
+  .score-block { padding-right: 9px; column-gap: 5px; }
+  .score-block > strong { font-size: 32px; }
+  .score-best { font-size: 7px; }
+  .hud-stats { gap: 8px; }
+  .stat { min-width: 44px; }
+  .coin-stat { min-width: 32px; }
+  .stat > strong { font-size: 21px; }
+  .speed-meter { width: 48px; }
+  .ride-status { top: 224px; right: 17px; gap: 6px; padding: 6px; }
+  .ride-status small { max-width: 112px; font-size: 8px; }
   .ride-status strong { font-size: 13px; }
   .ride-icon { width: 23px; height: 23px; }
   .controls { left: 17px; right: 17px; bottom: max(17px,env(safe-area-inset-bottom)); }
