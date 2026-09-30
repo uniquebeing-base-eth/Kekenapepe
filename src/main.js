@@ -23,10 +23,10 @@ function setCameraFraming() {
 setCameraFraming();
 camera.lookAt(0, 1, -0.5);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
+const renderer = new THREE.WebGLRenderer({ antialias: window.innerWidth >= 700, alpha: false });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 700 ? 1.25 : 1.6));
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true;
+renderer.shadowMap.enabled = window.innerWidth >= 700;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -36,8 +36,8 @@ gameElement.prepend(renderer.domElement);
 scene.add(new THREE.HemisphereLight('#eafff0', '#697d54', 2.1));
 const sun = new THREE.DirectionalLight('#fff1c1', 3.2);
 sun.position.set(-15, 27, 9);
-sun.castShadow = true;
-sun.shadow.mapSize.set(1024, 1024);
+sun.castShadow = window.innerWidth >= 700;
+sun.shadow.mapSize.set(window.innerWidth < 700 ? 512 : 1024, window.innerWidth < 700 ? 512 : 1024);
 sun.shadow.camera.left = -24;
 sun.shadow.camera.right = 24;
 sun.shadow.camera.top = 25;
@@ -51,14 +51,14 @@ const colors = {
 };
 const mats = Object.fromEntries(Object.entries(colors).map(([key, color]) => [key, new THREE.MeshStandardMaterial({ color, roughness: 0.92 })]));
 const routeProfiles = [
-  { name: 'Ikot Ekpene Road', laneBias: 0, curveWidth: 8, atmosphere: 'city centre traffic', path: [[5.04523, 7.89787], [5.04358, 7.90256], [5.0418, 7.90769], [5.03956, 7.91409], [5.03761, 7.91964], [5.03641, 7.92314]] },
-  { name: 'Aka Road', laneBias: -0.12, curveWidth: 5.5, atmosphere: 'busy shops and junctions', path: [[5.03347, 7.92764], [5.03317, 7.92861], [5.03218, 7.92712], [5.03059, 7.9264], [5.02674, 7.92489], [5.02466, 7.92405], [5.02108, 7.92261]] },
-  { name: 'Abak Road', laneBias: 0.15, curveWidth: 9, atmosphere: 'western Uyo route', path: [[5.03439, 7.92698], [5.03204, 7.92007], [5.03002, 7.91488], [5.02815, 7.91004], [5.02691, 7.90754]] },
-  { name: 'Oron Road', laneBias: -0.18, curveWidth: 7, atmosphere: 'Nwaniba connection', path: [[5.03454, 7.92816], [5.03368, 7.92957], [5.03226, 7.93173], [5.03092, 7.93358], [5.0304, 7.93397], [5.02798, 7.93471], [5.02295, 7.93648]] },
-  { name: 'Nwaniba Road', laneBias: 0.2, curveWidth: 8, atmosphere: 'roundabout route', path: [[5.03279, 7.93103], [5.03065, 7.934], [5.02949, 7.93904], [5.02868, 7.94123], [5.02775, 7.94332], [5.02701, 7.94638]] },
-  { name: 'Wellington Bassey Way', laneBias: -0.08, curveWidth: 4.5, atmosphere: 'Barracks Road', path: [[5.03518, 7.92871], [5.03586, 7.92967], [5.0364, 7.93043], [5.03762, 7.93211], [5.03792, 7.93253], [5.03847, 7.93329]] },
-  { name: 'Ibom Plaza Loop', laneBias: 0, curveWidth: 5, atmosphere: 'landmark circuit', path: [[5.03633, 7.92362], [5.03472, 7.92809], [5.03279, 7.93103], [5.03069, 7.93388], [5.02998, 7.93692], [5.03279, 7.93103]] },
-  { name: 'UniUyo Road', laneBias: 0.1, curveWidth: 8.5, atmosphere: 'University district', path: [[5.037, 7.92363], [5.0448, 7.92242], [5.04734, 7.92509], [5.05253, 7.9272], [5.05726, 7.92919]] },
+  { name: 'Ikot Ekpene Road', laneBias: 0, bend: 1, atmosphere: 'city centre traffic' },
+  { name: 'Aka Road', laneBias: -0.12, bend: 0.7, atmosphere: 'busy shops and junctions' },
+  { name: 'Abak Road', laneBias: 0.15, bend: 1.25, atmosphere: 'western Uyo route' },
+  { name: 'Oron Road', laneBias: -0.18, bend: 1.1, atmosphere: 'Nwaniba connection' },
+  { name: 'Nwaniba Road', laneBias: 0.2, bend: 0.85, atmosphere: 'roundabout route' },
+  { name: 'Wellington Bassey Way', laneBias: -0.08, bend: 0.65, atmosphere: 'Barracks Road' },
+  { name: 'Ibom Plaza Loop', laneBias: 0, bend: 0.45, atmosphere: 'landmark circuit' },
+  { name: 'UniUyo Road', laneBias: 0.1, bend: 0.9, atmosphere: 'University district' },
 ];
 const routeStreetLists = [
   ['Ikot Ekpene Road', 'Atiku Abubakar Avenue', 'Aka Road', 'Wellington Bassey Way'],
@@ -71,41 +71,15 @@ const routeStreetLists = [
   ['UniUyo Road', 'Ikpa Road', 'Itam Road', 'Ikot Ekpene Road'],
 ];
 
-for (const profile of routeProfiles) {
-  const latOrigin = profile.path.reduce((sum, point) => sum + point[0], 0) / profile.path.length;
-  const lonOrigin = profile.path.reduce((sum, point) => sum + point[1], 0) / profile.path.length;
-  const projected = profile.path.map(([lat, lon]) => ({
-    x: (lon - lonOrigin) * 111320 * Math.cos(latOrigin * Math.PI / 180),
-    z: (lat - latOrigin) * 111320,
-  }));
-  const minX = Math.min(...projected.map((point) => point.x));
-  const maxX = Math.max(...projected.map((point) => point.x));
-  profile.samples = projected.map((point) => ({
-    x: maxX === minX ? 0 : ((point.x - minX) / (maxX - minX) - 0.5) * profile.curveWidth,
-    distance: 0,
-  }));
-  for (let index = 1; index < projected.length; index += 1) {
-    const dx = projected[index].x - projected[index - 1].x;
-    const dz = projected[index].z - projected[index - 1].z;
-    profile.samples[index].distance = profile.samples[index - 1].distance + Math.hypot(dx, dz);
-  }
-}
-
 function activeRoute() {
   return routeProfiles[selectedRoad] || routeProfiles[0];
 }
 
 function routeCurve(z) {
-  const profile = activeRoute();
-  const total = profile.samples[profile.samples.length - 1].distance || 1;
-  const progress = THREE.MathUtils.clamp((560 - z) / routeLength, 0, 1);
-  const target = progress * total;
-  let index = 1;
-  while (index < profile.samples.length - 1 && profile.samples[index].distance < target) index += 1;
-  const start = profile.samples[index - 1];
-  const end = profile.samples[index];
-  const span = end.distance - start.distance || 1;
-  return THREE.MathUtils.lerp(start.x, end.x, (target - start.distance) / span);
+  const firstBend = (z + 206) / 56;
+  const secondBend = (z + 382) / 48;
+  const baseCurve = 3.1 * Math.exp(-firstBend * firstBend) - 2.6 * Math.exp(-secondBend * secondBend);
+  return baseCurve * activeRoute().bend;
 }
 
 const routeStart = -540;
@@ -1142,7 +1116,7 @@ function changeLane(direction) {
   if (!state.active) return;
   const nextLane = state.lane + direction;
   if (nextLane < 0 || nextLane > 2) {
-    endRun('You drifted into the roadside!');
+    showToast('Road edge, boss. Stay in the marked lanes.');
     return;
   }
   state.lane = nextLane;
@@ -1279,7 +1253,7 @@ function resetRun() {
   state.fuelBought = 0;
   state.nairaEarned = 0;
   state.nairaSpent = 0;
-  state.invincible = 0;
+  state.invincible = 15;
   state.runSaved = false;
   state.hornCooldown = 0;
   state.revives = 1;
@@ -1295,9 +1269,9 @@ function resetRun() {
     object.position.z = object.userData.startZ;
     object.position.x = routeCurve(object.position.z) + object.userData.roadsideX;
   }
-  for (const item of traffic) {
-    item.mesh.position.z = -42 - random() * 70;
-    item.lane = Math.floor(random() * 3);
+  for (const [index, item] of traffic.entries()) {
+    item.mesh.position.z = -180 - index * 34 - random() * 20;
+    item.lane = index % 3 === 0 ? 0 : index % 2 ? 2 : 1;
     item.collected = false;
     item.lanePosition = routeCurve(item.mesh.position.z) + routeLaneX(item.lane);
     item.mesh.position.x = item.lanePosition;
@@ -1374,6 +1348,8 @@ function bindHold(button, key) {
 
 bindHold(document.querySelector('#brake'), 'braking');
 bindHold(document.querySelector('#faster'), 'boosting');
+document.querySelector('#steer-left').addEventListener('click', () => changeLane(-1));
+document.querySelector('#steer-right').addEventListener('click', () => changeLane(1));
 ui.buyFuel.addEventListener('click', buyFuelLiter);
 ui.startButton.addEventListener('click', openRoadPicker);
 document.querySelector('#home-roads').addEventListener('click', openRoadPicker);
@@ -1569,6 +1545,7 @@ function animate(now) {
   if (!state.active && ui.crash.hidden) updateAttractScene(delta);
   if (state.active) {
     state.time += delta;
+    state.invincible = Math.max(0, state.invincible - delta);
     state.hornCooldown = Math.max(0, state.hornCooldown - delta);
     state.fuel = Math.max(0, state.fuel - delta * (state.boosting ? 0.085 : state.braking ? 0.01 : 0.04));
     const signalPhase = state.time % 9;
@@ -1618,7 +1595,7 @@ function animate(now) {
           checkpoint.userData.cleared = true;
           for (const barrier of checkpoint.userData.blockade) barrier.visible = false;
           showToast('Police checkpoint cleared. Oya, continue!');
-        } else if (Math.abs(barrierDistance) < 1.1) {
+        } else if (state.invincible <= 0 && Math.abs(barrierDistance) < 1.1) {
           endRun('You hit the police blockade. Stop and wait for the officers.');
         }
       }
@@ -1641,8 +1618,9 @@ function animate(now) {
     }
     updateBusStops(delta);
     const roundaboutDistance = roundaboutLandmark.position.z - player.position.z;
-    if (roundaboutDistance > -1.5 && roundaboutDistance < 1.5 && state.lane === 1) {
-      endRun('You hit the roundabout island. Choose an outer lane next time.');
+    if (roundaboutDistance > -1.5 && roundaboutDistance < 18 && state.lane === 1) {
+      state.lane = 2;
+      showToast('Roundabout ahead — moving to the clear lane.');
     }
 
     for (const item of traffic) {
@@ -1661,7 +1639,7 @@ function animate(now) {
         item.mesh.position.x = item.lanePosition;
       }
       for (const wheel of item.mesh.userData.wheels) wheel.rotation.x += (forward - item.speed * delta) * 0.75;
-      if (item.mesh.position.z > player.position.z - item.hitDepth && item.mesh.position.z < player.position.z + item.hitDepth && Math.abs(item.mesh.position.x - player.position.x) < item.hitWidth) {
+      if (state.invincible <= 0 && item.mesh.position.z > player.position.z - item.hitDepth && item.mesh.position.z < player.position.z + item.hitDepth && Math.abs(item.mesh.position.x - player.position.x) < item.hitWidth) {
         endRun();
         break;
       }
@@ -1825,7 +1803,11 @@ function playCrash() {
 window.addEventListener('resize', () => {
   setCameraFraming();
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
+  const compactScreen = window.innerWidth < 700;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, compactScreen ? 1.25 : 1.6));
+  renderer.shadowMap.enabled = !compactScreen;
+  sun.castShadow = !compactScreen;
+  sun.shadow.mapSize.set(compactScreen ? 512 : 1024, compactScreen ? 512 : 1024);
 });
 
 renderLeaderboard();

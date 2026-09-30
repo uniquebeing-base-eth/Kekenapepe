@@ -86,10 +86,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .control-guide b { color: #243f30; font-size: 8px; }
 .osm-credit { position: absolute; left: 0; bottom: -17px; color: rgba(44,73,55,.72); font-size: 7px; font-weight: 700; text-decoration: none; }
 .osm-credit:hover { color: #1e7552; text-decoration: underline; }
-.pedal-controls { display: flex; gap: 9px; }
+.pedal-controls { display: flex; align-items: center; gap: 9px; }
 .control-button { border: 1px solid rgba(37,71,48,.17); color: #244636; background: rgba(249,255,247,.78); box-shadow: 0 5px 17px rgba(30,61,44,.11); cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; transition: transform .12s,background .12s; }
 .control-button * { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .control-button:active,.control-button.pressed { transform: translateY(2px); background: var(--lime); }
+.steering-button { width: 43px; height: 43px; border-radius: 4px; font: 800 25px/1 'Barlow Condensed',sans-serif; }
 .pedal-button { height: 43px; min-width: 96px; display: flex; align-items: center; justify-content: center; gap: 7px; border-radius: 4px; font-size: 9px; font-weight: 800; letter-spacing: .7px; }
 .pedal-icon { font-size: 16px; }
 .brake-button { color: #9c4939; }
@@ -203,12 +204,13 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .ride-status strong { font-size: 13px; }
   .ride-icon { width: 23px; height: 23px; }
   .controls { left: 17px; right: 17px; bottom: max(17px,env(safe-area-inset-bottom)); }
-  .control-guide { grid-template-columns: 1fr; gap: 3px; padding-bottom: 0; font-size: 7px; }
+  .control-guide { display: flex; flex-wrap: wrap; gap: 4px 10px; padding-bottom: 5px; font-size: 7px; }
   .control-guide span { flex-direction: row; flex-wrap: wrap; gap: 2px 4px; }
   .control-guide b { font-size: 7px; }
   .osm-credit { bottom: -13px; font-size: 6px; }
-  .pedal-controls { gap: 6px; }
-  .pedal-button { min-width: 72px; height: 42px; gap: 4px; font-size: 8px; }
+  .pedal-controls { width: 100%; justify-content: space-between; gap: 4px; }
+  .steering-button { flex: 0 0 38px; width: 38px; height: 42px; }
+  .pedal-button { flex: 1 1 0; min-width: 0; height: 42px; gap: 4px; font-size: 8px; }
   .pedal-icon { font-size: 14px; }
   .landmark-label { top: 38%; }
   .toast { bottom: 86px; max-width: calc(100% - 28px); padding: 6px 9px; font-size: 11px; }

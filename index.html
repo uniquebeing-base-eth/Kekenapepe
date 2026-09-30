@@ -47,12 +47,14 @@
 
       <footer class="controls" aria-label="Driving controls">
         <div class="control-guide" aria-label="How to drive">
-          <span><b>SWIPE LEFT / RIGHT</b> change lane</span>
+          <span><b>← / → OR A / D</b> steer lanes</span>
           <span><b>HOLD BRAKE</b> slow down</span>
           <span><b>HOLD FASTER</b> boost speed</span>
         </div>
         <a class="osm-credit" href="https://www.openstreetmap.org/#map=14/5.03890/7.90950" target="_blank" rel="noreferrer">MAP DATA © OPENSTREETMAP</a>
         <div class="pedal-controls">
+          <button class="control-button steering-button" id="steer-left" aria-label="Steer left" title="Steer left">←</button>
+          <button class="control-button steering-button" id="steer-right" aria-label="Steer right" title="Steer right">→</button>
           <button class="control-button pedal-button brake-button" id="brake" aria-label="Brake" title="Brake"><span class="pedal-icon" aria-hidden="true">Ⅱ</span><span>BRAKE</span></button>
           <button class="control-button pedal-button faster-button" id="faster" aria-label="Go faster" title="Go faster"><span class="pedal-icon" aria-hidden="true">↗</span><span>FASTER</span></button>
           <button class="control-button pedal-button horn-button" id="horn" aria-label="Sound the horn" title="Sound the horn"><span class="pedal-icon" aria-hidden="true">♫</span><span>HORN</span></button>
