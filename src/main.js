@@ -767,12 +767,19 @@ const ui = {
   crashMessage: document.querySelector('#crash-message'), finalScore: document.querySelector('#final-score'), loading: document.querySelector('#loading-screen'),
   startScreen: document.querySelector('#start-screen'), startButton: document.querySelector('#start-button'), reviveButton: document.querySelector('#revive-button'),
   saveName: document.querySelector('#save-name'), saveScoreButton: document.querySelector('#save-score-button'), shareXButton: document.querySelector('#share-x-button'),
-  shareCopyButton: document.querySelector('#share-copy-button'), leaderboard: document.querySelector('#leaderboard-list'),
+  shareCopyButton: document.querySelector('#share-copy-button'), downloadCardButton: document.querySelector('#download-card-button'), leaderboard: document.querySelector('#leaderboard-list'),
+  roadScreen: document.querySelector('#road-screen'), roadGrid: document.querySelector('#road-grid'), roadDone: document.querySelector('#road-done'), roadBack: document.querySelector('#road-back'),
 };
 
 const streets = ['Abak Road', 'Ikot Ekpene Road', 'Aka Road', 'Wellington Bassey Way', 'Atiku Abubakar Avenue', 'Oron Road', 'Nwaniba Road', 'Ikpa Road', 'IBB Avenue', 'Itam Road', 'Nelson Mandela Road'];
 const coinPointValue = 50;
 const leaderboardKey = 'kekenapepe-leaderboard';
+const roadChoices = [
+  ['Ikot Ekpene Road', 'City centre traffic'], ['Aka Road', 'Busy shops and junctions'], ['Abak Road', 'Western Uyo route'],
+  ['Oron Road', 'Nwaniba connection'], ['Nwaniba Road', 'Roundabout route'], ['Wellington Bassey Way', 'Barracks Road'],
+  ['Ibom Plaza Loop', 'Landmark circuit'], ['UniUyo Road', 'University district'],
+];
+let selectedRoad = 0;
 const crashMessages = [
   'Even the keke needs a breather.', 'My brother, the road no be yours alone!', 'This keke don collect.', 'Omo, that one pain small.',
   'Conductor! Make we try again.', 'No worry. Uyo traffic gets everybody.',
@@ -811,6 +818,36 @@ function saveLeaderboardEntry(score, name, distance) {
   renderLeaderboard();
 }
 
+function createResultCard() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1200;
+  canvas.height = 630;
+  const context = canvas.getContext('2d');
+  const gradient = context.createLinearGradient(0, 0, 1200, 630);
+  gradient.addColorStop(0, '#173c31');
+  gradient.addColorStop(1, '#3f7e5d');
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, 1200, 630);
+  context.fillStyle = '#d5ef43';
+  context.font = '900 80px Barlow Condensed, sans-serif';
+  context.fillText('KEKENAPEPE', 70, 105);
+  context.fillStyle = '#f5f1d7';
+  context.font = '700 30px DM Sans, sans-serif';
+  context.fillText('UYO RUN · AKWA IBOM', 75, 150);
+  context.fillStyle = '#f5f1d7';
+  context.font = '800 42px Barlow Condensed, sans-serif';
+  context.fillText(state.profileName || 'YOUR UYO RUN', 75, 260);
+  context.font = '700 24px DM Sans, sans-serif';
+  context.fillStyle = '#c9e3ca';
+  context.fillText(`${Math.floor(state.distance)} m   ·   ${Math.floor(state.score)} points`, 75, 315);
+  context.fillText(`${state.coins} coins   ·   ₦${state.coins * coinPointValue} earned`, 75, 355);
+  context.fillText(`${ui.street.textContent}   ·   Uyo, Nigeria`, 75, 395);
+  context.fillStyle = '#d5ef43';
+  context.font = '800 22px DM Sans, sans-serif';
+  context.fillText('Drive smart. No wahala.', 75, 530);
+  return canvas.toDataURL('image/png');
+}
+
 function syncProfileName() {
   const cleaned = (ui.saveName.value || localStorage.getItem('kekenapepe-name') || 'Rider').trim().slice(0, 14) || 'Rider';
   state.profileName = cleaned;
@@ -822,6 +859,21 @@ function showToast(message) {
   ui.toast.classList.add('show');
   clearTimeout(state.toastTimer);
   state.toastTimer = setTimeout(() => ui.toast.classList.remove('show'), 1550);
+}
+
+function openRoadPicker() {
+  ui.roadGrid.innerHTML = roadChoices.map(([name, detail], index) => `<button class="road-choice${index === selectedRoad ? ' is-selected' : ''}" data-road-index="${index}"><strong>${name}</strong><small>${detail}</small></button>`).join('');
+  ui.roadGrid.querySelectorAll('.road-choice').forEach((choice) => choice.addEventListener('click', () => {
+    selectedRoad = Number(choice.dataset.roadIndex);
+    ui.roadGrid.querySelectorAll('.road-choice').forEach((item) => item.classList.toggle('is-selected', item === choice));
+  }));
+  ui.startScreen.classList.add('hidden');
+  ui.roadScreen.hidden = false;
+}
+
+function closeRoadPicker() {
+  ui.roadScreen.hidden = true;
+  ui.startScreen.classList.remove('hidden');
 }
 
 function changeLane(direction) {
@@ -844,15 +896,12 @@ function endRun(reason = null) {
     localStorage.setItem('kekenapepe-best', String(bestScore));
   }
   ui.best.textContent = String(bestScore).padStart(6, '0');
-  if (!ui.saveName.value) {
-    const savedName = localStorage.getItem('kekenapepe-name') || 'Rider';
-    ui.saveName.value = savedName;
-  }
-  syncProfileName();
-  saveLeaderboardEntry(final, state.profileName, Math.floor(state.distance));
+  state.profileName = localStorage.getItem('kekenapepe-name') || 'Rider';
+  ui.saveName.value = localStorage.getItem('kekenapepe-name') || '';
   const crashReason = reason || crashMessages[Math.floor(random() * crashMessages.length)];
   ui.crashMessage.textContent = crashReason;
   ui.finalScore.textContent = `${state.profileName} made it ${Math.floor(state.distance)} m · ${final} points · ${state.coins} coins · ₦${state.coins * coinPointValue} earned`;
+  ui.downloadCardButton.href = createResultCard();
   ui.reviveButton.hidden = state.revives <= 0;
   ui.crash.hidden = false;
 }
@@ -872,7 +921,6 @@ function reviveRun() {
 }
 
 function resetRun() {
-  syncProfileName();
   state.lane = 1;
   state.lanePosition = 0;
   state.speed = 48;
@@ -914,7 +962,7 @@ function resetRun() {
     item.mesh.visible = true;
   }
   ui.crash.hidden = true;
-  ui.street.textContent = streets[1];
+  ui.street.textContent = roadChoices[selectedRoad][0];
   ui.mission.textContent = 'Reach Ibom Plaza';
   ui.progress.style.width = '0%';
   ui.detail.textContent = '0 / 400 m';
@@ -926,7 +974,8 @@ function resetRun() {
   ui.fuelMeter.style.width = '100%';
   ui.hornStatus.textContent = 'READY';
   ui.startScreen.classList.add('hidden');
-  showToast(`New run. Make we move!`);
+  ui.roadScreen.hidden = true;
+  showToast(`${roadChoices[selectedRoad][0]} dey wait. Make we move!`);
 }
 
 function bindHold(button, key) {
@@ -949,7 +998,10 @@ function bindHold(button, key) {
 
 bindHold(document.querySelector('#brake'), 'braking');
 bindHold(document.querySelector('#faster'), 'boosting');
-ui.startButton.addEventListener('click', resetRun);
+ui.startButton.addEventListener('click', openRoadPicker);
+document.querySelector('#home-roads').addEventListener('click', openRoadPicker);
+ui.roadDone.addEventListener('click', resetRun);
+ui.roadBack.addEventListener('click', closeRoadPicker);
 ui.saveName.addEventListener('input', syncProfileName);
 ui.reviveButton.addEventListener('click', reviveRun);
 ui.saveScoreButton.addEventListener('click', () => {
