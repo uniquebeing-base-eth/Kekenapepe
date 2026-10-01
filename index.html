@@ -17,7 +17,8 @@
         </a>
         <div class="route-pill"><span class="live-dot"></span><span id="street-name">Ikot Ekpene Road</span><span class="route-divider">/</span><span class="route-district">CITY RUN</span></div>
         <time class="local-clock" id="local-clock" aria-label="Local date and time"><span id="local-date"></span><strong id="local-time"></strong></time>
-        <button class="sound-button" id="sound-toggle" aria-label="Mute sound" aria-pressed="true" title="Mute sound"><span aria-hidden="true">♪</span></button>
+        <button class="music-button" id="afrobeats-open" type="button" aria-label="Open Nigerian Afrobeats player" title="Nigerian Afrobeats"><span aria-hidden="true">♫</span></button>
+        <button class="sound-button" id="sound-toggle" aria-label="Mute game sounds" aria-pressed="true" title="Mute game sounds"><span aria-hidden="true">♪</span></button>
       </header>
 
       <section class="hud" aria-label="Run status">
@@ -128,6 +129,19 @@
             <li><strong>Continue</strong><span>After a crash, continue for ₦3,000. Each extra continue in that race costs three times more.</span></li>
           </ol>
           <p class="how-to-note">Pick coins, dodge traffic, and enjoy your Uyo cruise. No wahala!</p>
+        </section>
+      </div>
+      <div class="afrobeats-screen" id="afrobeats-screen" hidden>
+        <section class="afrobeats-panel" role="dialog" aria-modal="true" aria-labelledby="afrobeats-heading">
+          <header class="leaderboard-header">
+            <div><span class="home-eyebrow">NAIJA SOUNDS · YOUTUBE</span><h2 id="afrobeats-heading">Afrobeats on the road</h2></div>
+            <button class="modal-close" id="afrobeats-close" type="button" aria-label="Close Afrobeats player">×</button>
+          </header>
+          <p class="afrobeats-copy">Naija Afrobeats mix featuring Nigerian artists. Press play in the YouTube player; availability and ads are managed by YouTube.</p>
+          <div class="youtube-frame">
+            <iframe id="afrobeats-player" title="Nigerian Afrobeats YouTube playlist" data-src="https://www.youtube-nocookie.com/embed/videoseries?list=PLql52eOuSMjzXlVYxaZ7q4pQXMmlxbxCn&amp;autoplay=1&amp;controls=1&amp;playsinline=1&amp;rel=0" src="about:blank" allow="autoplay; encrypted-media; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+          </div>
+          <p class="afrobeats-note">Game horn and engine sounds can be muted separately with the music-note button.</p>
         </section>
       </div>
       <div class="crash-screen" id="crash-screen" hidden>
