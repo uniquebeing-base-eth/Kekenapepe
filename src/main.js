@@ -824,6 +824,7 @@ const streets = ['Abak Road', 'Ikot Ekpene Road', 'Aka Road', 'Wellington Bassey
 const coinPointValue = 50;
 const leaderboardKey = 'kekenapepe-leaderboard';
 const walletKey = 'kekenapepe-wallet-coins';
+const soundPreferenceKey = 'kekenapepe-sound-preference';
 
 function readWalletCoins() {
   const storedWallet = localStorage.getItem(walletKey);
@@ -1103,7 +1104,7 @@ function updateLocalClock() {
   }).formatToParts(now);
   const lagosMonth = lagosDate.find((part) => part.type === 'month')?.value;
   const lagosDay = lagosDate.find((part) => part.type === 'day')?.value;
-  ui.independenceGreeting.hidden = !(lagosMonth === '10' && lagosDay === '1');
+  ui.independenceGreeting.hidden = false;
   ui.localDate.textContent = new Intl.DateTimeFormat('en-NG', {
     timeZone: 'Africa/Lagos', weekday: 'short', day: 'numeric', month: 'short',
   }).format(now);
@@ -1408,7 +1409,10 @@ bindHold(document.querySelector('#faster'), 'boosting');
 ui.refuel.addEventListener('click', refuelAtStation);
 ui.refuelFive.addEventListener('click', () => buyFuel(5));
 ui.passengerAction.addEventListener('click', handlePassengerAction);
-ui.startButton.addEventListener('click', resetRun);
+ui.startButton.addEventListener('click', () => {
+  if (localStorage.getItem(soundPreferenceKey) !== 'muted' && !soundEnabled) setSoundEnabled(true);
+  resetRun();
+});
 ui.saveName.addEventListener('input', (event) => syncProfileName(event.currentTarget.value));
 ui.startStreet.addEventListener('change', renderStreetTabs);
 ui.openLeaderboard.addEventListener('click', openLeaderboard);
@@ -1503,18 +1507,7 @@ function triggerHorn() {
   showToast('Horn blast! Road clear.');
 }
 document.querySelector('#sound-toggle').addEventListener('click', (event) => {
-  soundEnabled = !soundEnabled;
-  event.currentTarget.classList.toggle('is-muted', !soundEnabled);
-  event.currentTarget.setAttribute('aria-label', soundEnabled ? 'Mute sound' : 'Enable sound');
-  event.currentTarget.title = soundEnabled ? 'Mute sound' : 'Enable sound';
-  event.currentTarget.setAttribute('aria-pressed', String(soundEnabled));
-  if (soundEnabled) {
-    startAudio();
-    showToast('Engine and music on. Enjoy the ride!');
-  } else {
-    stopAudio();
-    showToast('Sound off');
-  }
+  setSoundEnabled(!soundEnabled);
 });
 
 const keysDown = new Set();
