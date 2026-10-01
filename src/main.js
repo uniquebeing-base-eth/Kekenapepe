@@ -1577,8 +1577,7 @@ function animate(now) {
   previousTime = now;
   if (!state.active) {
     animateHomeScene(delta, now);
-    return;
-  }
+  } else {
   state.time += delta;
   state.hornCooldown = Math.max(0, state.hornCooldown - delta);
   state.invincibility = Math.max(0, state.invincibility - delta);
@@ -1808,7 +1807,7 @@ function animate(now) {
     ui.passengerAction.hidden = !state.passengers && !state.passengerPickup;
     ui.passengerAction.textContent = state.passengers ? 'DROP OFF' : 'PICK UP';
     ui.passengerAction.disabled = state.speed > 5;
-  } else animateHomeScene(delta, now);
+  }
   if (state.impactTime > 0) {
     state.impactTime = Math.max(0, state.impactTime - delta);
     const shake = state.impactTime / 0.62;
