@@ -94,6 +94,7 @@
             </div>
           </div>
           <button id="start-button" class="primary-button">START RIDE <span aria-hidden="true">↗</span></button>
+          <button id="open-how-to" class="leaderboard-open" type="button"><span>HOW TO PLAY</span><span aria-hidden="true">?</span></button>
           <button id="open-leaderboard" class="leaderboard-open" type="button"><span>LEADERBOARD</span><span aria-hidden="true">↗</span></button>
         </div>
       </div>
@@ -110,6 +111,23 @@
           </div>
           <ol id="leaderboard-list" aria-live="polite"></ol>
           <p class="leaderboard-empty" id="leaderboard-empty" hidden>No scores for this period yet. Start a ride and claim the first spot.</p>
+        </section>
+      </div>
+      <div class="how-to-screen" id="how-to-screen" hidden>
+        <section class="how-to-panel" role="dialog" aria-modal="true" aria-labelledby="how-to-heading">
+          <header class="leaderboard-header">
+            <div><span class="home-eyebrow">KEKENAPEPE · UYO RUN</span><h2 id="how-to-heading">How to play</h2></div>
+            <button class="modal-close" id="close-how-to" type="button" aria-label="Close how to play">×</button>
+          </header>
+          <ol class="how-to-list">
+            <li><strong>Steer</strong><span>Swipe left or right anywhere on the road to change lanes.</span></li>
+            <li><strong>Drive</strong><span>Hold <b>FASTER</b> to boost. Hold <b>BRAKE</b> to slow or stop.</span></li>
+            <li><strong>Police checkpoint</strong><span>Brake before the checkpoint. Keep at or below 25 km/h as you reach the barrier to get cleared.</span></li>
+            <li><strong>Pick up passengers</strong><span>Bus stops are on the roadside. Stop nearby and line up to board; stop again at the destination and tap <b>DROP OFF</b> for a ₦150 fare.</span></li>
+            <li><strong>Fuel</strong><span>Tap <b>1L · ₦500</b> or <b>5L · ₦2,500</b> any time. Each litre adds 25% fuel.</span></li>
+            <li><strong>Continue</strong><span>After a crash, continue for ₦3,000. Each extra continue in that race costs three times more.</span></li>
+          </ol>
+          <p class="how-to-note">Pick coins, dodge traffic, and enjoy your Uyo cruise. No wahala!</p>
         </section>
       </div>
       <div class="crash-screen" id="crash-screen" hidden>

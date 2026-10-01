@@ -818,6 +818,7 @@ const ui = {
   streetTabs: document.querySelector('#street-tabs'), leaderboardScreen: document.querySelector('#leaderboard-screen'),
   leaderboardEmpty: document.querySelector('#leaderboard-empty'), openLeaderboard: document.querySelector('#open-leaderboard'),
   closeLeaderboard: document.querySelector('#close-leaderboard'), leaderboardTabs: document.querySelector('.leaderboard-tabs'),
+  howToScreen: document.querySelector('#how-to-screen'), openHowTo: document.querySelector('#open-how-to'), closeHowTo: document.querySelector('#close-how-to'),
 };
 
 const streets = ['Abak Road', 'Ikot Ekpene Road', 'Aka Road', 'Wellington Bassey Way', 'Atiku Abubakar Avenue', 'Oron Road', 'Nwaniba Road', 'Ikpa Road', 'IBB Avenue', 'Itam Road', 'Nelson Mandela Road'];
@@ -1014,6 +1015,19 @@ function openLeaderboard(event) {
 function closeLeaderboard() {
   ui.leaderboardScreen.hidden = true;
   leaderboardReturnFocus?.focus();
+}
+
+let howToReturnFocus = null;
+
+function openHowTo(event) {
+  howToReturnFocus = event.currentTarget;
+  ui.howToScreen.hidden = false;
+  ui.closeHowTo.focus();
+}
+
+function closeHowTo() {
+  ui.howToScreen.hidden = true;
+  howToReturnFocus?.focus();
 }
 
 function syncProfileName(value = ui.saveName.value || localStorage.getItem('kekenapepe-name') || 'Rider') {
@@ -1415,6 +1429,11 @@ ui.startButton.addEventListener('click', () => {
 });
 ui.saveName.addEventListener('input', (event) => syncProfileName(event.currentTarget.value));
 ui.startStreet.addEventListener('change', renderStreetTabs);
+ui.openHowTo.addEventListener('click', openHowTo);
+ui.closeHowTo.addEventListener('click', closeHowTo);
+ui.howToScreen.addEventListener('click', (event) => {
+  if (event.target === ui.howToScreen) closeHowTo();
+});
 ui.openLeaderboard.addEventListener('click', openLeaderboard);
 ui.closeLeaderboard.addEventListener('click', closeLeaderboard);
 ui.leaderboardScreen.addEventListener('click', (event) => {
@@ -1431,6 +1450,7 @@ ui.leaderboardTabs.addEventListener('click', (event) => {
 });
 window.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !ui.leaderboardScreen.hidden) closeLeaderboard();
+  if (event.key === 'Escape' && !ui.howToScreen.hidden) closeHowTo();
 });
 ui.reviveButton.addEventListener('click', reviveRun);
 ui.resultsLeaderboard.addEventListener('click', openLeaderboard);
