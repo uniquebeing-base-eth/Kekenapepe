@@ -25,6 +25,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #f1ce42; outline-offs
 .topbar { position: absolute; z-index: 2; top: 0; left: 0; right: 0; height: 66px; padding: 0 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(35,70,52,.11); background: linear-gradient(180deg,rgba(246,255,245,.82),rgba(246,255,245,.3)); backdrop-filter: blur(8px); }
 .brand { display: flex; gap: 11px; align-items: center; color: var(--ink); text-decoration: none; }
 .brand-mark { width: 39px; height: 39px; display: grid; place-items: center; border-radius: 12px 12px 12px 4px; background: var(--lime); color: #224635; font: 900 27px/.9 'Barlow Condensed',sans-serif; transform: rotate(-5deg); }
+.brand-mark img { width: 34px; height: 34px; display: block; }
 .brand-copy { display: grid; gap: 1px; }
 .brand-copy strong { font: 800 21px/.95 'Barlow Condensed',sans-serif; letter-spacing: .2px; }
 .brand-copy small { color: #63756b; font-size: 9px; font-weight: 800; letter-spacing: 1.2px; }

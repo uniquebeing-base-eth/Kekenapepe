@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <defs>
+    <clipPath id="scene"><path d="M390 0h810v630H390z"/></clipPath>
+  </defs>
+  <path fill="#123b2b" d="M0 0h1200v630H0z"/>
+  <path fill="#e2f0ce" d="M0 0h390v630H0z"/>
+  <path fill="#f1ce42" d="M0 0h13v630H0z"/>
+  <path fill="#1e7552" d="M53 67h49v7H53z"/>
+  <text x="53" y="99" fill="#1e7552" font-family="Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="3">UYO, AKWA IBOM · NIGERIA</text>
+  <text x="49" y="204" fill="#183d2c" font-family="Arial,sans-serif" font-size="66" font-weight="900" letter-spacing="-2">KEKENA</text>
+  <text x="49" y="272" fill="#183d2c" font-family="Arial,sans-serif" font-size="66" font-weight="900" letter-spacing="-2">PEPE</text>
+  <path fill="#f26f4e" d="M53 296h88v7H53z"/>
+  <text x="53" y="352" fill="#1e7552" font-family="Arial,sans-serif" font-size="22" font-weight="800" letter-spacing="6">UYO RUN</text>
+  <text x="53" y="401" fill="#355843" font-family="Arial,sans-serif" font-size="19" font-weight="500">No wahala, make we run!</text>
+  <path fill="#c7dfba" d="M53 456h282v1H53z"/>
+  <circle cx="63" cy="496" r="5" fill="#f26f4e"/>
+  <text x="79" y="501" fill="#355843" font-family="Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="2">IKOT EKPENE ROAD</text>
+  <g clip-path="url(#scene)">
+    <path fill="#a9d9c4" d="M390 0h810v630H390z"/>
+    <path fill="#b8e8c9" d="M390 0h810v274H390z"/>
+    <circle cx="1051" cy="107" r="49" fill="#f4d66c"/>
+    <path fill="#f1e7c4" d="m390 250 164-76 115 62 106-95 140 117 120-92 165 69v120H390z"/>
+    <path fill="#8abf87" d="m390 291 159-74 116 81 114-114 142 101 106-88 173 65v97H390z"/>
+    <path fill="#dfb77d" d="M403 207h104v86H403zm113 19h79v75h-79zm538-34h87v101h-87zm95 10h120v96h-120z"/>
+    <path fill="#ba6d51" d="M403 199h104v13H403zm113 19h79v12h-79zm538-34h87v13h-87zm95 10h120v13h-120z"/>
+    <path fill="#78a998" d="M417 229h13v21h-13zm26 0h13v21h-13zm42 0h13v21h-13zm44 18h13v20h-13zm34 0h13v20h-13zm492-28h13v22h-13zm31 0h13v22h-13zm58 13h13v22h-13zm32 0h13v22h-13z"/>
+    <path fill="#669c67" d="M390 294h810v62H390z"/>
+    <path fill="#92745a" d="M487 260h12v121h-12z"/>
+    <path fill="#427b4f" d="M494 172c-49-12-70-43-66-73 29 4 50 17 66 37-5-35 12-64 41-81 7 31-1 57-25 81 27-16 53-17 79-4-20 29-48 41-82 36l-1 92h-12z"/>
+    <path fill="#568e58" d="M1141 265h10v105h-10z"/>
+    <path fill="#427b4f" d="M1146 202c-40-11-57-35-54-61 24 4 41 15 54 32-4-28 10-51 34-65 6 25-1 46-20 65 22-13 43-14 64-3-16 23-39 33-66 29v68h-10z"/>
+    <path fill="#3d4843" d="m614 309 382 0 323 321H391z"/>
+    <path fill="#d9c79e" d="M614 309h382l17 22H596z"/>
+    <path fill="#f6e8b7" d="m793 322 23 0-8 46h-22zm-21 86 18 0-7 41h-18zm-30 82h17l-6 32h-18z"/>
+    <path fill="#f6e8b7" d="m840 322 23 0 8 46h-22zm42 86 18 0 8 41h-18zm53 82h17l10 32h-18z"/>
+    <ellipse cx="865" cy="542" rx="115" ry="24" fill="#173b2a" fill-opacity=".3"/>
+    <path fill="#214b36" d="m769 464 21-105c3-13 15-22 29-22h97c14 0 25 9 29 22l22 105H769z"/>
+    <path fill="#f1ce42" d="m790 366 10-36c3-9 10-15 20-15h69c10 0 18 6 21 15l10 36H790z"/>
+    <path fill="#1e7552" d="M783 371h165l11 82H772z"/>
+    <path fill="#a9d9c4" d="m804 376 48 0v43h-55zm58 0h43l9 43h-52z"/>
+    <path fill="#f26f4e" d="m780 443 170 0 4 23H776z"/>
+    <path fill="#f1ce42" d="M803 449h36v7h-36zm87 0h36v7h-36z"/>
+    <path stroke="#214b36" stroke-width="9" d="m802 461-21 48m155-48 22 48"/>
+    <circle cx="778" cy="511" r="25" fill="#23332a"/>
+    <circle cx="778" cy="511" r="11" fill="#e9dfc0"/>
+    <circle cx="958" cy="511" r="25" fill="#23332a"/>
+    <circle cx="958" cy="511" r="11" fill="#e9dfc0"/>
+    <path stroke="#214b36" stroke-width="8" d="M864 466v45"/>
+    <circle cx="864" cy="514" r="16" fill="#23332a"/>
+    <circle cx="864" cy="514" r="7" fill="#e9dfc0"/>
+    <path fill="#f4e8c9" d="M1021 466h179v164h-179z"/>
+    <path fill="#1e7552" d="M1040 489h142v43h-142z"/>
+    <text x="1111" y="516" fill="#f4e8c9" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" font-weight="800">UYO CITY</text>
+    <path fill="#f1ce42" d="M1055 546h113v5h-113z"/>
+  </g>
+</svg>
