@@ -1297,6 +1297,7 @@ function reviveRun() {
 
 function resetRun() {
   clearTimeout(state.crashTimer);
+  if (soundEnabled && !audioContext) startAudio();
   state.profileName = localStorage.getItem('kekenapepe-name') || 'Uyo Rider';
   ui.saveName.value = state.profileName === 'Uyo Rider' ? '' : state.profileName;
   state.runId = `${Date.now()}-${Math.floor(random() * 1e9)}`;
@@ -1479,7 +1480,7 @@ gameElement.addEventListener('pointerup', (event) => {
 });
 gameElement.addEventListener('pointercancel', () => { swipeStart = null; });
 
-let soundEnabled = false;
+let soundEnabled = true;
 let audioContext = null;
 let masterGain = null;
 let engineOscillator = null;
