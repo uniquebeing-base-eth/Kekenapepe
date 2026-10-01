@@ -144,6 +144,16 @@ button:focus-visible, a:focus-visible { outline: 3px solid #f1ce42; outline-offs
 .telegram-cta span { color: #f1ce42; font-size: 16px; }
 .leaderboard-screen { position: absolute; z-index: 7; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(7,27,20,.72); backdrop-filter: blur(8px); }
 .leaderboard-screen[hidden] { display: none; }
+.how-to-screen { position: absolute; z-index: 9; inset: 0; display: grid; place-items: center; overflow-y: auto; padding: 20px; background: rgba(5,23,18,.82); backdrop-filter: blur(8px); }
+.how-to-screen[hidden] { display: none; }
+.how-to-panel { width: min(600px,100%); max-height: calc(100dvh - 40px); overflow-y: auto; padding: 22px; border-top: 4px solid #f1ce42; background: #f5f0d8; color: #213c2d; box-shadow: 0 24px 80px rgba(0,0,0,.4); }
+.how-to-panel .leaderboard-header h2 { font-size: 32px; }
+.how-to-list { display: grid; gap: 0; margin: 16px 0 0; padding: 0; list-style: none; counter-reset: how-to-step; }
+.how-to-list li { display: grid; grid-template-columns: 28px 1fr; column-gap: 10px; padding: 11px 0; border-top: 1px solid rgba(33,60,45,.13); counter-increment: how-to-step; }
+.how-to-list li::before { content: counter(how-to-step, decimal-leading-zero); grid-row: span 2; color: #ad7e25; font: 800 15px 'Barlow Condensed',sans-serif; }
+.how-to-list li strong { color: #286845; font: 800 15px 'Barlow Condensed',sans-serif; }
+.how-to-list li span { color: #536456; font-size: 12px; line-height: 1.45; }
+.how-to-note { margin: 12px 0 0; padding: 10px 12px; background: #e9e3cd; color: #286845; font-weight: 700; }
 .leaderboard-panel { width: min(460px,100%); padding: 24px; background: #f5f0d8; color: #213c2d; box-shadow: 0 24px 80px rgba(0,0,0,.34); }
 .leaderboard-header { display: flex; justify-content: space-between; align-items: start; gap: 16px; }
 .leaderboard-header .home-eyebrow { color: #43805a; font-size: 8px; }
