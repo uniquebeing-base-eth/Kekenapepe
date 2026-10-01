@@ -7,9 +7,15 @@
   "theme_color": "#b8e8c9",
   "icons": [
     {
-      "src": "/kekenapepe-mark.svg",
-      "sizes": "192x192 512x512",
-      "type": "image/svg+xml",
+      "src": "/kekenapepe-app-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/kekenapepe-app-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any"
     }
   ]
