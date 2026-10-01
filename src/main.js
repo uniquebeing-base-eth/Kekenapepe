@@ -810,6 +810,7 @@ const ui = {
   impactFlash: document.querySelector('#impact-flash'),
   startStreet: document.querySelector('#start-street'), localDate: document.querySelector('#local-date'), localTime: document.querySelector('#local-time'),
   startBestDistance: document.querySelector('#start-best-distance'), startTotalRuns: document.querySelector('#start-total-runs'), startWallet: document.querySelector('#start-wallet'),
+  independenceGreeting: document.querySelector('#independence-greeting'),
   downloadCardButton: document.querySelector('#download-card-button'), refuel: document.querySelector('#refuel'),
   refuelLabel: document.querySelector('#refuel span:last-child'),
   refuelFive: document.querySelector('#refuel-five'), passengerAction: document.querySelector('#passenger-action'),
@@ -1097,11 +1098,17 @@ function handlePassengerAction() {
 
 function updateLocalClock() {
   const now = new Date();
+  const lagosDate = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Africa/Lagos', month: 'numeric', day: 'numeric',
+  }).formatToParts(now);
+  const lagosMonth = lagosDate.find((part) => part.type === 'month')?.value;
+  const lagosDay = lagosDate.find((part) => part.type === 'day')?.value;
+  ui.independenceGreeting.hidden = !(lagosMonth === '10' && lagosDay === '1');
   ui.localDate.textContent = new Intl.DateTimeFormat('en-NG', {
-    weekday: 'short', day: 'numeric', month: 'short',
+    timeZone: 'Africa/Lagos', weekday: 'short', day: 'numeric', month: 'short',
   }).format(now);
   ui.localTime.textContent = new Intl.DateTimeFormat('en-NG', {
-    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+    timeZone: 'Africa/Lagos', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
   }).format(now);
 }
 
@@ -1207,6 +1214,7 @@ function changeLane(direction) {
 function endRun(reason = null) {
   if (!state.active) return;
   state.active = false;
+  gameElement.classList.remove('is-playing');
   if (state.impactTime <= 0) triggerImpact();
   if (soundEnabled) playCrash();
   const final = Math.floor(state.score);
@@ -1266,6 +1274,7 @@ function reviveRun() {
   state.reviveCount += 1;
   saveWallet();
   state.active = true;
+  gameElement.classList.add('is-playing');
   state.fuel = Math.max(30, state.fuel);
   state.speed = 34;
   state.hornCooldown = 0;
@@ -1301,6 +1310,7 @@ function resetRun() {
   state.distance = 0;
   state.time = 0;
   state.active = true;
+  gameElement.classList.add('is-playing');
   state.passengers = 0;
   state.dropDistance = null;
   state.dropPrompted = false;

@@ -37,7 +37,9 @@ button:focus-visible, a:focus-visible { outline: 3px solid #f1ce42; outline-offs
 .sound-button { width: 38px; height: 38px; border: 1px solid rgba(36,75,57,.15); border-radius: 50%; color: #275641; background: rgba(248,255,248,.58); font-size: 20px; cursor: pointer; }
 .sound-button.is-muted { color: #7d8a81; }
 
-.hud { position: absolute; z-index: 1; top: 104px; left: 5.2%; display: flex; align-items: stretch; gap: 28px; }
+.topbar,.hud,.mission,.ride-status,.controls { visibility: hidden; opacity: 0; pointer-events: none; transition: opacity .24s ease,visibility .24s ease; }
+#game.is-playing .topbar,#game.is-playing .hud,#game.is-playing .mission,#game.is-playing .ride-status,#game.is-playing .controls { visibility: visible; opacity: 1; pointer-events: auto; }
+.hud { position: absolute; z-index: 1; top: 104px; left: 5.2%; display: flex; align-items: stretch; gap: 28px; padding: 12px 14px; border-left: 4px solid #f1c542; background: rgba(249,247,229,.95); box-shadow: 0 8px 24px rgba(8,35,23,.24); }
 .score-block { display: grid; grid-template-columns: auto auto; column-gap: 14px; align-items: baseline; padding-right: 24px; border-right: 1px solid rgba(32,67,49,.18); }
 .eyebrow,.stat-label { color: #50675c; font-size: 9px; font-weight: 800; letter-spacing: 1.6px; }
 .score-block .eyebrow { grid-column: 1 / -1; }
@@ -56,7 +58,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #f1ce42; outline-offs
 .stat-caption { color: #64756b; font-size: 9px; }
 .horn-stat strong { font-size: 17px; }
 
-.mission { position: absolute; z-index: 1; top: 105px; right: 5.2%; width: 185px; display: grid; gap: 7px; padding: 12px 14px; border-left: 3px solid #e1ad28; background: rgba(250,255,247,.73); box-shadow: 0 6px 24px rgba(31,67,47,.05); }
+.mission { position: absolute; z-index: 1; top: 105px; right: 5.2%; width: 185px; display: grid; gap: 7px; padding: 12px 14px; border-left: 4px solid #f1c542; background: rgba(249,247,229,.96); box-shadow: 0 8px 24px rgba(8,35,23,.22); }
 .mission-kicker { color: #687b6c; font-size: 8px; font-weight: 800; letter-spacing: 1.2px; }
 .mission-icon { color: #e1ad28; font-size: 12px; }
 .mission > strong { font: 700 18px/1.08 'Barlow Condensed',sans-serif; overflow-wrap: anywhere; }
@@ -64,7 +66,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #f1ce42; outline-offs
 .mission-progress span { display: block; width: 0; height: 100%; background: #e1ad28; transition: width .2s; }
 .mission > small { color: #718075; font-size: 9px; line-height: 1.2; }
 
-.ride-status { position: absolute; z-index: 1; top: 205px; right: 5.2%; display: flex; gap: 9px; align-items: center; padding: 8px 10px; background: rgba(249,255,247,.66); }
+.ride-status { position: absolute; z-index: 1; top: 205px; right: 5.2%; display: flex; gap: 9px; align-items: center; padding: 8px 10px; border-left: 3px solid #2b7b4d; background: rgba(249,247,229,.96); box-shadow: 0 6px 20px rgba(8,35,23,.18); }
 .ride-icon { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 50%; background: #d7efe0; color: #377353; font-size: 17px; }
 .ride-status > span:nth-child(2) { display: grid; gap: 2px; }
 .ride-status strong { font: 700 14px/1 'Barlow Condensed',sans-serif; }
@@ -118,6 +120,8 @@ button:focus-visible, a:focus-visible { outline: 3px solid #f1ce42; outline-offs
 .start-panel h1 { margin: 2px 0 0; color: #f1ce42; font: 900 82px/.84 'Barlow Condensed',sans-serif; }
 .start-tagline { margin: 0; color: #fff9e7; font: 800 25px/1 'Barlow Condensed',sans-serif; letter-spacing: 2px; }
 .start-location { margin: -5px 0 6px; color: #d4e6d3; font: 600 14px 'DM Sans',sans-serif; }
+.independence-greeting { justify-self: start; margin: 0 0 6px; padding: 8px 12px; background: #f1ce42; color: #21432b; font: 900 11px 'DM Sans',sans-serif; letter-spacing: .8px; }
+.independence-greeting[hidden] { display: none; }
 .route-picker { display: grid; gap: 9px; }
 .route-picker h2 { margin: 0; color: #fff8dc; font: 700 14px 'Barlow Condensed',sans-serif; }
 .street-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 1px 1px 8px; scrollbar-width: thin; scrollbar-color: #d5ef43 rgba(255,255,255,.16); }
@@ -135,6 +139,8 @@ button:focus-visible, a:focus-visible { outline: 3px solid #f1ce42; outline-offs
 .leaderboard-open,.leaderboard-shortcut { display: flex; align-items: center; justify-content: space-between; gap: 20px; justify-self: start; width: min(300px,100%); min-height: 44px; padding: 11px 14px; border: 1px solid #4b8b60; background: #286845; color: #fff8dc; font: 800 11px 'DM Sans',sans-serif; letter-spacing: 1.4px; text-align: left; cursor: pointer; }
 .leaderboard-open span:last-child,.leaderboard-shortcut span:last-child { color: #f1ce42; font-size: 18px; }
 .leaderboard-shortcut { justify-self: center; width: auto; }
+.telegram-cta { display: inline-flex; justify-content: space-between; align-items: center; gap: 14px; width: min(300px,100%); min-height: 44px; padding: 11px 14px; border: 1px solid #279b83; background: #087c69; color: #fff; font: 800 10px 'DM Sans',sans-serif; letter-spacing: .8px; text-decoration: none; }
+.telegram-cta span { color: #f1ce42; font-size: 16px; }
 .leaderboard-screen { position: absolute; z-index: 7; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(7,27,20,.72); backdrop-filter: blur(8px); }
 .leaderboard-screen[hidden] { display: none; }
 .leaderboard-panel { width: min(460px,100%); padding: 24px; background: #f5f0d8; color: #213c2d; box-shadow: 0 24px 80px rgba(0,0,0,.34); }
