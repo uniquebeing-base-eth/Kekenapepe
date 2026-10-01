@@ -29,22 +29,22 @@
         </a>
         <div class="route-pill"><span class="live-dot"></span><span id="street-name">Ikot Ekpene Road</span><span class="route-divider">/</span><span class="route-district">CITY RUN</span></div>
         <time class="local-clock" id="local-clock" aria-label="Local date and time"><span id="local-date"></span><strong id="local-time"></strong></time>
-        <button class="music-button" id="afrobeats-open" type="button" aria-label="Open Nigerian Afrobeats player" title="Nigerian Afrobeats"><span aria-hidden="true">♫</span></button>
+        <button class="music-button" id="music-open" type="button" aria-label="Open local road music player" title="Road music"><span aria-hidden="true">♫</span></button>
         <button class="sound-button" id="sound-toggle" aria-label="Mute game sounds" aria-pressed="true" title="Mute game sounds"><span aria-hidden="true">♪</span></button>
       </header>
 
       <section class="hud" aria-label="Run status">
         <div class="score-block"><span class="eyebrow">RUN SCORE</span><strong id="score">000000</strong><span class="score-best">BEST <b id="best-score">000000</b></span></div>
         <div class="hud-stats">
-          <div class="stat"><span class="stat-label">SPEED</span><strong><span id="speed">48</span><small> km/h</small></strong><div class="speed-meter"><i id="speed-meter-fill"></i></div></div>
-          <div class="stat coin-stat"><span class="stat-label">NAIRA</span><strong><span class="coin-icon">₦</span><span id="coins">0</span></strong><small class="stat-caption">earned</small></div>
+          <div class="stat"><span class="stat-label">SPD</span><strong><span id="speed">48</span><small> km/h</small></strong><div class="speed-meter"><i id="speed-meter-fill"></i></div></div>
+          <div class="stat coin-stat"><span class="stat-label">CASH</span><strong><span class="coin-icon">₦</span><span id="coins">0</span></strong><small class="stat-caption">earned</small></div>
           <div class="stat fuel-stat"><span class="stat-label">FUEL</span><strong><span id="fuel">100</span><small>%</small></strong><div class="fuel-meter"><i id="fuel-meter-fill"></i></div></div>
           <div class="stat horn-stat"><span class="stat-label">HORN</span><strong id="horn-status">READY</strong></div>
         </div>
       </section>
 
       <aside class="mission" aria-live="polite">
-        <span class="mission-kicker"><span class="mission-icon" aria-hidden="true">✦</span> TODAY'S RUN</span>
+        <span class="mission-kicker"><span class="mission-icon" aria-hidden="true">✦</span> DAILY MISSION <span class="mission-streak" id="mission-streak">0-DAY STREAK</span></span>
         <strong id="mission-title">Reach Ibom Plaza</strong>
         <div class="mission-progress"><span id="mission-progress"></span></div>
         <small id="mission-detail">0 / 400 m</small>
@@ -52,7 +52,7 @@
 
       <section class="ride-status" aria-live="polite">
         <span class="ride-icon" aria-hidden="true">♙</span>
-        <span><strong id="passenger-title">No passenger</strong><small id="passenger-detail">Look out for a pickup</small></span>
+        <span><strong id="passenger-title">PICKUP</strong><small id="passenger-detail">Look out for a pickup</small></span>
         <span class="ride-count" id="passenger-count">0</span>
         <button class="passenger-action" id="passenger-action" type="button" hidden>DROP OFF</button>
       </section>
@@ -137,23 +137,42 @@
             <li><strong>Drive</strong><span>Hold <b>FASTER</b> to boost. Hold <b>BRAKE</b> to slow or stop.</span></li>
             <li><strong>Police checkpoint</strong><span>Brake before the checkpoint. Keep at or below 25 km/h as you reach the barrier to get cleared.</span></li>
             <li><strong>Pick up passengers</strong><span>Bus stops are on the roadside. Stop nearby and line up to board; stop again at the destination and tap <b>DROP OFF</b> for a ₦150 fare.</span></li>
+            <li><strong>Road music</strong><span>Tap the music-note button to open the player; the ride pauses while it is open. Choose <b>ADD FILES</b> and select audio from your device. Added tracks are available for this session.</span></li>
+            <li><strong>Daily mission</strong><span>Finish today's distance, coin, or passenger goal for a ₦250 bonus. Complete missions on consecutive days to build a streak; progress and streaks save on this device.</span></li>
             <li><strong>Fuel</strong><span>Tap <b>1L · ₦500</b> or <b>5L · ₦2,500</b> any time. Each litre adds 25% fuel.</span></li>
             <li><strong>Continue</strong><span>After a crash, continue for ₦3,000. Each extra continue in that race costs three times more.</span></li>
           </ol>
           <p class="how-to-note">Pick coins, dodge traffic, and enjoy your Uyo cruise. No wahala!</p>
         </section>
       </div>
-      <div class="afrobeats-screen" id="afrobeats-screen" hidden>
-        <section class="afrobeats-panel" role="dialog" aria-modal="true" aria-labelledby="afrobeats-heading">
+      <div class="music-screen" id="music-screen" hidden>
+        <section class="music-panel" role="dialog" aria-modal="true" aria-labelledby="music-heading">
           <header class="leaderboard-header">
-            <div><span class="home-eyebrow">NAIJA SOUNDS · YOUTUBE</span><h2 id="afrobeats-heading">Afrobeats on the road</h2></div>
-            <button class="modal-close" id="afrobeats-close" type="button" aria-label="Close Afrobeats player">×</button>
+            <div><span class="home-eyebrow">LOCAL PLAYLIST · KEKENAPEPE</span><h2 id="music-heading">Naija sounds for the road</h2></div>
+            <button class="modal-close" id="music-close" type="button" aria-label="Close music player">×</button>
           </header>
-          <p class="afrobeats-copy">Naija Afrobeats mix featuring Nigerian artists. Press play in the YouTube player; availability and ads are managed by YouTube.</p>
-          <div class="youtube-frame">
-            <iframe id="afrobeats-player" title="Nigerian Afrobeats YouTube playlist" data-src="https://www.youtube-nocookie.com/embed/videoseries?list=PLql52eOuSMjzXlVYxaZ7q4pQXMmlxbxCn&amp;autoplay=1&amp;controls=1&amp;playsinline=1&amp;rel=0" src="about:blank" allow="autoplay; encrypted-media; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+          <div class="music-now-playing">
+            <span class="music-art" aria-hidden="true">♫</span>
+            <span class="music-track-copy"><small id="music-status">PLAY A TRACK</small><strong id="music-track-title">No track selected</strong><span id="music-track-artist">Local music library</span></span>
           </div>
-          <p class="afrobeats-note">Game horn and engine sounds can be muted separately with the music-note button.</p>
+          <audio id="music-audio" preload="metadata" hidden></audio>
+          <div class="music-timeline">
+            <span id="music-current-time">0:00</span>
+            <input id="music-progress" type="range" min="0" max="100" value="0" step="0.1" aria-label="Seek through track" disabled />
+            <span id="music-duration">0:00</span>
+          </div>
+          <div class="music-controls">
+            <button id="music-previous" type="button" aria-label="Previous track" title="Previous track">|◀</button>
+            <button id="music-play" class="music-play" type="button" aria-label="Play music" title="Play"><span id="music-play-icon" aria-hidden="true">▶</span></button>
+            <button id="music-next" type="button" aria-label="Next track" title="Next track">▶|</button>
+            <label class="music-volume" for="music-volume"><span aria-hidden="true">♫</span><input id="music-volume" type="range" min="0" max="1" value="0.75" step="0.05" aria-label="Music volume" /></label>
+          </div>
+          <section class="music-library" aria-label="Local playlist">
+            <header><div><h3>ON THE ROAD</h3><span id="music-count">0 tracks</span></div><button id="music-add" type="button">＋ ADD FILES</button></header>
+            <input id="music-file-picker" type="file" accept="audio/*,.mp3,.m4a,.m4b,.aac,.ogg,.oga,.opus,.wav,.flac,.aif,.aiff,.alac,.caf" multiple hidden />
+            <ol id="music-track-list"></ol>
+            <p id="music-empty" class="music-empty">No tracks yet. Choose audio files here for this session, or add tracks to public/music/playlist.json.</p>
+          </section>
         </section>
       </div>
       <div class="crash-screen" id="crash-screen" hidden>

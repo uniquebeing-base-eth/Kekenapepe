@@ -36,6 +36,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #f1ce42; outline-offs
 .local-clock { position: absolute; right: calc(5.2% + 52px); display: grid; justify-items: end; gap: 2px; color: #53695d; font-size: 9px; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .local-clock strong { color: #243b30; font-size: 13px; }
 .sound-button { width: 38px; height: 38px; border: 1px solid rgba(36,75,57,.15); border-radius: 50%; color: #275641; background: rgba(248,255,248,.58); font-size: 20px; cursor: pointer; }
+.music-button { width: 38px; height: 38px; border: 1px solid rgba(36,75,57,.15); border-radius: 50%; color: #fff8dc; background: #286845; font-size: 20px; cursor: pointer; }
 .sound-button.is-muted { color: #7d8a81; }
 
 .topbar,.hud,.mission,.ride-status,.controls { visibility: hidden; opacity: 0; pointer-events: none; transition: opacity .24s ease,visibility .24s ease; }
@@ -56,22 +57,23 @@ button:focus-visible, a:focus-visible { outline: 3px solid #f1ce42; outline-offs
 .fuel-meter i { background: #f5bb4d; }
 .coin-stat { min-width: 40px; }
 .coin-icon { color: #e89a28; font-family: 'DM Sans',sans-serif; font-size: 10px; }
-.stat-caption { color: #64756b; font-size: 6px; }
+.stat-caption { display: none; color: #64756b; font-size: 6px; }
 .horn-stat strong { font-size: 11px; }
 
 .mission { position: absolute; z-index: 1; top: 72px; right: 18px; width: 170px; display: grid; gap: 5px; padding: 8px 10px; border-left: 3px solid #f1c542; background: rgba(249,247,229,.94); box-shadow: 0 4px 14px rgba(8,35,23,.16); }
-.mission-kicker { color: #687b6c; font-size: 8px; font-weight: 800; letter-spacing: 1.2px; }
+.mission-kicker { display: flex; align-items: center; gap: 4px; color: #687b6c; font-size: 8px; font-weight: 800; letter-spacing: 1.2px; }
 .mission-icon { color: #e1ad28; font-size: 12px; }
+.mission-streak { margin-left: auto; color: #ac6844; font-size: 7px; letter-spacing: .3px; white-space: nowrap; }
 .mission > strong { font: 700 18px/1.08 'Barlow Condensed',sans-serif; overflow-wrap: anywhere; }
 .mission-progress { height: 3px; background: #dce7d8; }
 .mission-progress span { display: block; width: 0; height: 100%; background: #e1ad28; transition: width .2s; }
 .mission > small { color: #718075; font-size: 9px; line-height: 1.2; }
 
-.ride-status { position: absolute; z-index: 1; top: 136px; right: 18px; display: flex; gap: 7px; align-items: center; padding: 6px 8px; border-left: 2px solid #2b7b4d; background: rgba(249,247,229,.94); box-shadow: 0 4px 12px rgba(8,35,23,.14); }
+.ride-status { position: absolute; z-index: 1; top: 136px; right: 18px; display: flex; gap: 5px; align-items: center; padding: 4px 6px; border-left: 2px solid #2b7b4d; background: rgba(249,247,229,.88); box-shadow: 0 4px 12px rgba(8,35,23,.1); }
 .ride-icon { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 50%; background: #d7efe0; color: #377353; font-size: 17px; }
 .ride-status > span:nth-child(2) { display: grid; gap: 2px; }
-.ride-status strong { font: 700 14px/1 'Barlow Condensed',sans-serif; }
-.ride-status small { color: #718075; font-size: 9px; line-height: 1.2; }
+.ride-status strong { font: 700 11px/1 'Barlow Condensed',sans-serif; }
+.ride-status small { display: none; }
 .ride-count { min-width: 21px; height: 21px; display: grid; place-items: center; border-radius: 50%; background: var(--lime); font-size: 11px; font-weight: 800; }
 .passenger-action { padding: 7px 9px; border: 1px solid #bf9a37; background: #f1ce42; color: #284731; font: 800 9px 'DM Sans',sans-serif; cursor: pointer; }
 .passenger-action:disabled { opacity: .5; cursor: not-allowed; }
@@ -145,6 +147,40 @@ button:focus-visible, a:focus-visible { outline: 3px solid #f1ce42; outline-offs
 .telegram-cta span { color: #f1ce42; font-size: 16px; }
 .leaderboard-screen { position: absolute; z-index: 7; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(7,27,20,.72); backdrop-filter: blur(8px); }
 .leaderboard-screen[hidden] { display: none; }
+.music-screen { position: absolute; z-index: 10; inset: 0; display: grid; place-items: center; overflow-y: auto; padding: 20px; background: rgba(5,23,18,.84); backdrop-filter: blur(8px); }
+.music-screen[hidden] { display: none; }
+.music-panel { width: min(560px,100%); max-height: calc(100dvh - 40px); overflow-y: auto; padding: 22px; border-top: 4px solid #f1ce42; background: #f5f0d8; color: #213c2d; box-shadow: 0 24px 80px rgba(0,0,0,.4); }
+.music-panel .leaderboard-header h2 { font-size: 32px; }
+.music-now-playing { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
+.music-art { width: 58px; height: 58px; flex: 0 0 auto; display: grid; place-items: center; background: #286845; color: #f1ce42; font-size: 28px; }
+.music-track-copy { min-width: 0; display: grid; gap: 4px; }
+.music-track-copy small { color: #61806b; font-size: 8px; font-weight: 800; letter-spacing: 1.2px; }
+.music-track-copy strong { overflow: hidden; color: #213c2d; font: 800 20px/1.05 'Barlow Condensed',sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.music-track-copy > span { overflow: hidden; color: #687467; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.music-timeline { display: grid; grid-template-columns: 34px minmax(0,1fr) 34px; align-items: center; gap: 8px; margin-top: 16px; color: #687467; font-size: 9px; font-variant-numeric: tabular-nums; }
+.music-timeline input,.music-volume input { width: 100%; accent-color: #1e7552; }
+.music-controls { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 12px 0 18px; }
+.music-controls > button { width: 38px; height: 38px; border: 1px solid rgba(33,60,45,.18); background: transparent; color: #28563d; font-size: 15px; cursor: pointer; }
+.music-controls > button:disabled { opacity: .45; cursor: not-allowed; }
+.music-controls > .music-play { width: 44px; height: 44px; border: 0; background: #f1ce42; color: #213c2d; font-size: 17px; }
+.music-volume { display: flex; align-items: center; gap: 8px; width: 100px; margin-left: 10px; color: #286845; }
+.music-volume input { min-width: 0; }
+.music-library { border-top: 1px solid rgba(33,60,45,.16); padding-top: 12px; }
+.music-library > header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.music-library > header > div { display: flex; align-items: baseline; gap: 9px; }
+.music-library h3 { margin: 0; color: #31553d; font: 800 12px 'DM Sans',sans-serif; letter-spacing: 1px; }
+.music-library > header span { color: #7a8477; font-size: 10px; }
+.music-library > header button { min-height: 32px; padding: 0 10px; border: 1px solid rgba(30,117,82,.28); background: transparent; color: #1e7552; font: 800 9px 'DM Sans',sans-serif; letter-spacing: .5px; cursor: pointer; }
+#music-track-list { display: grid; gap: 2px; max-height: 190px; overflow-y: auto; margin: 10px 0 0; padding: 0; list-style: none; }
+.music-track-button { width: 100%; display: grid; grid-template-columns: 28px minmax(0,1fr) 22px; align-items: center; gap: 9px; padding: 8px 6px; border: 0; background: transparent; color: #284633; text-align: left; cursor: pointer; }
+.music-track-button:hover,.music-track-button[aria-current="true"] { background: #e8e3ce; }
+.music-track-number { color: #8b927e; font: 700 11px 'Barlow Condensed',sans-serif; }
+.music-track-details { min-width: 0; display: grid; gap: 2px; }
+.music-track-details strong,.music-track-details small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.music-track-details strong { font-size: 11px; }
+.music-track-details small { color: #728071; font-size: 9px; }
+.music-track-marker { color: #1e7552; font-size: 12px; text-align: center; }
+.music-empty { margin: 12px 0 0; color: #687467; font-size: 11px; line-height: 1.5; }
 .how-to-screen { position: absolute; z-index: 9; inset: 0; display: grid; place-items: center; overflow-y: auto; padding: 20px; background: rgba(5,23,18,.82); backdrop-filter: blur(8px); }
 .how-to-screen[hidden] { display: none; }
 .how-to-panel { width: min(600px,100%); max-height: calc(100dvh - 40px); overflow-y: auto; padding: 22px; border-top: 4px solid #f1ce42; background: #f5f0d8; color: #213c2d; box-shadow: 0 24px 80px rgba(0,0,0,.4); }
@@ -201,25 +237,27 @@ button:focus-visible, a:focus-visible { outline: 3px solid #f1ce42; outline-offs
   .route-pill #street-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .route-divider,.route-district { display: none; }
   .sound-button { width: 34px; height: 34px; }
+  .music-button { width: 34px; height: 34px; }
   .mission { top: 56px; right: 10px; width: clamp(128px, 42vw, 148px); gap: 4px; padding: 6px 7px; }
   .mission-kicker { font-size: 7px; }
   .mission > strong { font-size: 16px; }
   .mission > small { font-size: 8px; }
-  .hud { top: 106px; left: 8px; right: 8px; justify-content: space-between; gap: 3px; padding: 5px; }
-  .score-block { padding-right: 5px; column-gap: 2px; }
-  .score-block > strong { font-size: 22px; }
+  .hud { top: 94px; left: 8px; right: auto; width: clamp(108px, 29vw, 126px); display: grid; justify-content: stretch; align-items: stretch; gap: 4px; padding: 6px; }
+  .score-block { padding-right: 0; padding-bottom: 4px; column-gap: 2px; border-right: 0; border-bottom: 1px solid rgba(32,67,49,.18); }
+  .score-block > strong { font-size: 20px; }
   .score-best { font-size: 5px; }
-  .hud-stats { flex: 1; min-width: 0; gap: 4px; justify-content: space-between; }
-  .stat { min-width: 0; flex: 1; }
+  .hud-stats { display: grid; grid-template-columns: 1fr; flex: none; min-width: 0; gap: 4px; }
+  .stat { min-width: 0; display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: baseline; gap: 1px 5px; }
   .coin-stat { min-width: 0; }
-  .stat > strong { font-size: 15px; }
-  .coin-stat > strong { font-size: 12px; }
+  .stat > strong { font-size: 13px; }
+  .coin-stat > strong { font-size: 11px; }
   .coin-icon { font-size: 9px; }
-  .speed-meter, .fuel-meter { width: 100%; max-width: 32px; }
+  .speed-meter, .fuel-meter { grid-column: 1 / -1; width: 100%; max-width: none; }
+  .stat-caption { grid-column: 1 / -1; }
   .horn-stat strong { font-size: 9px; }
   .ride-status { top: 174px; right: 10px; gap: 5px; padding: 5px; }
-  .ride-status small { max-width: 112px; font-size: 8px; }
-  .ride-status strong { font-size: 13px; }
+  .ride-status small { display: none; }
+  .ride-status strong { font-size: 10px; }
   .ride-icon { width: 23px; height: 23px; }
   .controls { right: max(12px,env(safe-area-inset-right)); bottom: max(12px,env(safe-area-inset-bottom)); width: min(156px,44vw); }
   .control-guide,.osm-credit { display: none; }
@@ -237,6 +275,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #f1ce42; outline-offs
   .start-location { font-size: 12px; }
   .start-meta { gap: 8px; }
   .leaderboard-panel { padding: 18px; }
+  .music-panel { padding: 18px; }
   .loading-screen .loading-brand { font-size: 48px; }
   .loading-screen .loading-run { font-size: 17px; }
 }

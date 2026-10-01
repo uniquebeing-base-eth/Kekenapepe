@@ -801,6 +801,7 @@ const ui = {
   meter: document.querySelector('#speed-meter-fill'), fuel: document.querySelector('#fuel'), fuelMeter: document.querySelector('#fuel-meter-fill'),
   coins: document.querySelector('#coins'), street: document.querySelector('#street-name'),
   mission: document.querySelector('#mission-title'), progress: document.querySelector('#mission-progress'), detail: document.querySelector('#mission-detail'),
+  missionStreak: document.querySelector('#mission-streak'),
   passengerTitle: document.querySelector('#passenger-title'), passengerDetail: document.querySelector('#passenger-detail'), passengers: document.querySelector('#passenger-count'),
   hornStatus: document.querySelector('#horn-status'), toast: document.querySelector('#toast'), landmark: document.querySelector('#landmark-label'), crash: document.querySelector('#crash-screen'),
   crashMessage: document.querySelector('#crash-message'), finalScore: document.querySelector('#final-score'), loading: document.querySelector('#loading-screen'),
@@ -819,6 +820,15 @@ const ui = {
   leaderboardEmpty: document.querySelector('#leaderboard-empty'), openLeaderboard: document.querySelector('#open-leaderboard'),
   closeLeaderboard: document.querySelector('#close-leaderboard'), leaderboardTabs: document.querySelector('.leaderboard-tabs'),
   howToScreen: document.querySelector('#how-to-screen'), openHowTo: document.querySelector('#open-how-to'), closeHowTo: document.querySelector('#close-how-to'),
+  musicScreen: document.querySelector('#music-screen'), musicOpen: document.querySelector('#music-open'), musicClose: document.querySelector('#music-close'),
+  musicAudio: document.querySelector('#music-audio'), musicStatus: document.querySelector('#music-status'),
+  musicTrackTitle: document.querySelector('#music-track-title'), musicTrackArtist: document.querySelector('#music-track-artist'),
+  musicTrackList: document.querySelector('#music-track-list'), musicEmpty: document.querySelector('#music-empty'), musicCount: document.querySelector('#music-count'),
+  musicPlay: document.querySelector('#music-play'), musicPlayIcon: document.querySelector('#music-play-icon'),
+  musicPrevious: document.querySelector('#music-previous'), musicNext: document.querySelector('#music-next'),
+  musicProgress: document.querySelector('#music-progress'), musicCurrentTime: document.querySelector('#music-current-time'),
+  musicDuration: document.querySelector('#music-duration'), musicVolume: document.querySelector('#music-volume'),
+  musicAdd: document.querySelector('#music-add'), musicFilePicker: document.querySelector('#music-file-picker'),
 };
 
 const streets = ['Abak Road', 'Ikot Ekpene Road', 'Aka Road', 'Wellington Bassey Way', 'Atiku Abubakar Avenue', 'Oron Road', 'Nwaniba Road', 'Ikpa Road', 'IBB Avenue', 'Itam Road', 'Nelson Mandela Road'];
@@ -826,6 +836,56 @@ const coinPointValue = 50;
 const leaderboardKey = 'kekenapepe-leaderboard';
 const walletKey = 'kekenapepe-wallet-coins';
 const soundPreferenceKey = 'kekenapepe-sound-preference';
+const dailyMissionKey = 'kekenapepe-daily-mission';
+const dailyMissionTemplates = [
+  { id: 'distance', type: 'distance', goal: 1200, unit: 'm', title: 'Cruise 1,200 metres' },
+  { id: 'coins', type: 'coins', goal: 10, unit: 'coins', title: 'Collect 10 road coins' },
+  { id: 'deliveries', type: 'deliveries', goal: 3, unit: 'drop-offs', title: 'Drop off 3 passengers' },
+];
+
+function getLagosDateKey(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Africa/Lagos', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function getPreviousDateKey(dateKey) {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day) - 86400000).toISOString().slice(0, 10);
+}
+
+function createDailyMission(dateKey, previous = {}) {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  const dayNumber = Math.floor(Date.UTC(year, month - 1, day) / 86400000);
+  const template = dailyMissionTemplates[((dayNumber % dailyMissionTemplates.length) + dailyMissionTemplates.length) % dailyMissionTemplates.length];
+  const lastCompletedDate = typeof previous.lastCompletedDate === 'string' ? previous.lastCompletedDate : null;
+  const streakIsCurrent = previous.date === dateKey && previous.completed === true;
+  const streakIsConsecutive = lastCompletedDate === getPreviousDateKey(dateKey);
+  return {
+    ...template,
+    date: dateKey,
+    progress: 0,
+    completed: false,
+    streak: streakIsCurrent || streakIsConsecutive ? Math.max(0, Number(previous.streak) || 0) : 0,
+    lastCompletedDate,
+  };
+}
+
+function readDailyMission() {
+  let previous = {};
+  try {
+    previous = JSON.parse(localStorage.getItem(dailyMissionKey) || '{}');
+  } catch {}
+  const date = getLagosDateKey();
+  const mission = createDailyMission(date, previous);
+  if (previous.date === date && previous.id === mission.id) {
+    mission.progress = Math.min(mission.goal, Math.max(0, Number(previous.progress) || 0));
+    mission.completed = previous.completed === true;
+  }
+  return mission;
+}
 
 function readWalletCoins() {
   const storedWallet = localStorage.getItem(walletKey);
@@ -853,7 +913,9 @@ const state = {
   fuel: 100, fuelStopped: 0, hornCooldown: 0, profileName: 'Uyo Driver', impactTime: 0,
   startStreetIndex: 1, runRecorded: false, runId: null, nearStation: false, deliveries: 0, endlessMission: null, invincibility: 0,
   dropPrompted: false, passengerPickup: null, missedPassengers: 0, crashTimer: null, reviveCount: 0,
+  dailyMission: null, nextTrafficSpawnDistance: 450,
 };
+state.dailyMission = readDailyMission();
 
 function currentReviveCost() {
   return 3000 * (3 ** state.reviveCount);
@@ -884,6 +946,69 @@ function saveWallet() {
   ui.startWallet.textContent = `₦${state.coins * coinPointValue}`;
   updateReviveButton();
 }
+
+function saveDailyMission() {
+  localStorage.setItem(dailyMissionKey, JSON.stringify(state.dailyMission));
+}
+
+function renderDailyMission() {
+  const mission = state.dailyMission;
+  if (!mission) return;
+  ui.mission.textContent = mission.completed ? 'Daily mission done!' : mission.title;
+  ui.progress.style.width = `${mission.progress / mission.goal * 100}%`;
+  ui.detail.textContent = mission.completed
+    ? 'Completed · ₦250 bonus'
+    : `${Math.min(mission.goal, Math.floor(mission.progress))} / ${mission.goal} ${mission.unit}`;
+  ui.missionStreak.textContent = mission.completed
+    ? `DONE · ${mission.streak}-DAY STREAK`
+    : `${mission.streak}-DAY STREAK`;
+}
+
+function refreshDailyMission() {
+  const today = getLagosDateKey();
+  if (state.dailyMission.date === today) return;
+  state.dailyMission = createDailyMission(today, state.dailyMission);
+  state.endlessMission = null;
+  renderDailyMission();
+}
+
+function completeDailyMission() {
+  const mission = state.dailyMission;
+  if (mission.completed) return;
+  const yesterday = getPreviousDateKey(mission.date);
+  mission.streak = mission.lastCompletedDate === yesterday ? mission.streak + 1 : 1;
+  mission.lastCompletedDate = mission.date;
+  mission.progress = mission.goal;
+  mission.completed = true;
+  state.score += 250;
+  state.coins += 5;
+  state.runCoinsEarned += 5;
+  saveWallet();
+  saveDailyMission();
+  renderDailyMission();
+  showToast(`Daily mission complete! ₦250 bonus · ${mission.streak}-day streak!`);
+  if (soundEnabled) playChime();
+}
+
+function addDailyMissionProgress(type, amount) {
+  refreshDailyMission();
+  const mission = state.dailyMission;
+  if (mission.completed || mission.type !== type || amount <= 0) return;
+  const previousProgress = mission.progress;
+  mission.progress = Math.min(mission.goal, mission.progress + amount);
+  if (mission.progress >= mission.goal) {
+    completeDailyMission();
+    return;
+  }
+  const shouldSave = type !== 'distance'
+    || Math.floor(previousProgress / 20) !== Math.floor(mission.progress / 20);
+  if (shouldSave) {
+    saveDailyMission();
+    renderDailyMission();
+  }
+}
+
+renderDailyMission();
 
 function getLeaderboard() {
   try {
@@ -1030,6 +1155,167 @@ function closeHowTo() {
   howToReturnFocus?.focus();
 }
 
+let musicReturnFocus = null;
+let musicTracks = [];
+let musicTrackIndex = -1;
+let musicPlaylistLoaded = false;
+let musicResumeRun = false;
+
+function formatMusicTime(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
+}
+
+function renderMusicPlaylist() {
+  ui.musicTrackList.replaceChildren();
+  ui.musicCount.textContent = `${musicTracks.length} ${musicTracks.length === 1 ? 'track' : 'tracks'}`;
+  ui.musicEmpty.hidden = musicTracks.length > 0;
+  ui.musicPlay.disabled = musicTracks.length === 0;
+  ui.musicPrevious.disabled = musicTracks.length === 0;
+  ui.musicNext.disabled = musicTracks.length === 0;
+
+  musicTracks.forEach((track, index) => {
+    const item = document.createElement('li');
+    const button = document.createElement('button');
+    const number = document.createElement('span');
+    const details = document.createElement('span');
+    const title = document.createElement('strong');
+    const artist = document.createElement('small');
+    const marker = document.createElement('span');
+
+    item.className = 'music-track';
+    button.type = 'button';
+    button.className = 'music-track-button';
+    button.setAttribute('aria-current', String(index === musicTrackIndex));
+    number.className = 'music-track-number';
+    number.textContent = String(index + 1).padStart(2, '0');
+    details.className = 'music-track-details';
+    title.textContent = track.title;
+    artist.textContent = track.artist;
+    marker.className = 'music-track-marker';
+    marker.textContent = index === musicTrackIndex && !ui.musicAudio.paused ? '♫' : '▶';
+    details.append(title, artist);
+    button.append(number, details, marker);
+    button.addEventListener('click', () => playMusicTrack(index));
+    item.append(button);
+    ui.musicTrackList.append(item);
+  });
+}
+
+function updateMusicPlaybackState() {
+  const playing = !ui.musicAudio.paused;
+  ui.musicPlayIcon.textContent = playing ? 'Ⅱ' : '▶';
+  ui.musicPlay.setAttribute('aria-label', playing ? 'Pause music' : 'Play music');
+  ui.musicPlay.title = playing ? 'Pause' : 'Play';
+  ui.musicStatus.textContent = playing ? 'NOW PLAYING' : musicTrackIndex >= 0 ? 'PAUSED' : 'PLAY A TRACK';
+  renderMusicPlaylist();
+}
+
+async function loadMusicPlaylist() {
+  ui.musicStatus.textContent = 'LOADING PLAYLIST';
+  try {
+    const playlistUrl = new URL('music/playlist.json', document.baseURI);
+    const response = await fetch(playlistUrl, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Playlist request failed: ${response.status}`);
+    const playlist = await response.json();
+    const musicBaseUrl = new URL('music/', document.baseURI);
+    musicTracks = Array.isArray(playlist.tracks) ? playlist.tracks.flatMap((track) => {
+      if (!track || typeof track.src !== 'string' || !track.src.trim()) return [];
+      try {
+        return [{
+          title: String(track.title || track.src.split('/').pop()).replace(/\.[^.]+$/, ''),
+          artist: String(track.artist || 'Kekenapepe road mix'),
+          src: new URL(track.src, musicBaseUrl).href,
+        }];
+      } catch {
+        return [];
+      }
+    }) : [];
+    musicPlaylistLoaded = true;
+    ui.musicStatus.textContent = musicTracks.length ? 'READY TO PLAY' : 'PLAYLIST IS EMPTY';
+    renderMusicPlaylist();
+  } catch {
+    ui.musicStatus.textContent = 'PLAYLIST UNAVAILABLE';
+    ui.musicEmpty.textContent = 'Could not load public/music/playlist.json.';
+    ui.musicEmpty.hidden = false;
+  }
+}
+
+function openMusicPlayer(event) {
+  musicReturnFocus = event.currentTarget;
+  musicResumeRun = state.active;
+  if (musicResumeRun) {
+    state.active = false;
+    state.boosting = false;
+    state.braking = false;
+  }
+  ui.musicScreen.hidden = false;
+  if (!musicPlaylistLoaded) void loadMusicPlaylist();
+  ui.musicClose.focus();
+}
+
+function closeMusicPlayer() {
+  ui.musicScreen.hidden = true;
+  if (musicResumeRun) state.active = true;
+  musicResumeRun = false;
+  musicReturnFocus?.focus();
+}
+
+async function playMusicTrack(index) {
+  const track = musicTracks[index];
+  if (!track) return;
+  musicTrackIndex = index;
+  ui.musicTrackTitle.textContent = track.title;
+  ui.musicTrackArtist.textContent = track.artist;
+  ui.musicStatus.textContent = 'LOADING TRACK';
+  ui.musicAudio.src = track.src;
+  ui.musicProgress.value = '0';
+  ui.musicProgress.disabled = true;
+  ui.musicCurrentTime.textContent = '0:00';
+  ui.musicDuration.textContent = '0:00';
+  renderMusicPlaylist();
+  try {
+    await ui.musicAudio.play();
+  } catch {
+    ui.musicStatus.textContent = 'TAP PLAY TO START';
+  }
+}
+
+function addLocalMusicFiles(files) {
+  const audioFiles = Array.from(files || []);
+  if (!audioFiles.length) return;
+
+  const supportedAudioExtension = /\.(mp3|m4a|m4b|aac|ogg|oga|opus|wav|flac|aif|aiff|alac|caf)$/i;
+  const addedTracks = audioFiles
+    .filter((file) => file.type.startsWith('audio/') || supportedAudioExtension.test(file.name))
+    .map((file) => ({
+      title: file.name.replace(/\.[^.]+$/, ''),
+      artist: 'From this device',
+      src: URL.createObjectURL(file),
+    }));
+  musicTracks.push(...addedTracks);
+  ui.musicFilePicker.value = '';
+  const rejectedCount = audioFiles.length - addedTracks.length;
+  ui.musicStatus.textContent = addedTracks.length
+    ? `${addedTracks.length} LOCAL ${addedTracks.length === 1 ? 'TRACK' : 'TRACKS'} ADDED${rejectedCount ? ` · ${rejectedCount} UNSUPPORTED` : ''}`
+    : 'NO SUPPORTED AUDIO FILES';
+  renderMusicPlaylist();
+}
+
+function playNextMusicTrack() {
+  if (musicTracks.length) void playMusicTrack((musicTrackIndex + 1 + musicTracks.length) % musicTracks.length);
+}
+
+function playPreviousMusicTrack() {
+  if (!musicTracks.length) return;
+  if (ui.musicAudio.currentTime > 3) {
+    ui.musicAudio.currentTime = 0;
+    return;
+  }
+  void playMusicTrack((musicTrackIndex - 1 + musicTracks.length) % musicTracks.length);
+}
+
 function syncProfileName(value = ui.saveName.value || localStorage.getItem('kekenapepe-name') || 'Rider') {
   const cleaned = value.trim().slice(0, 14) || 'Rider';
   state.profileName = cleaned;
@@ -1080,12 +1366,13 @@ function completePassengerDropoff() {
   state.dropPrompted = false;
   state.passengerPickup = null;
   state.deliveries += 1;
+  addDailyMissionProgress('deliveries', 1);
   state.score += 150;
   state.coins += 3;
   state.runCoinsEarned += 3;
   saveWallet();
   ui.passengers.textContent = '0';
-  ui.passengerTitle.textContent = 'No passenger';
+  ui.passengerTitle.textContent = 'PICKUP';
   ui.passengerDetail.textContent = 'Look out for a pickup';
   ui.passengerAction.hidden = true;
   showToast('Passenger dropped off safe! +150 points · ₦150 fare.');
@@ -1100,7 +1387,7 @@ function boardPassenger(pickup) {
   state.dropDistance = state.distance + 160;
   state.dropPrompted = false;
   ui.passengers.textContent = '1';
-  ui.passengerTitle.textContent = 'Passenger onboard';
+  ui.passengerTitle.textContent = 'ONBOARD';
   ui.passengerDetail.textContent = 'Ride safe to the drop-off';
   ui.passengerAction.textContent = 'DROP OFF';
   showToast('Passenger don enter! Carry them safe to drop-off.');
@@ -1169,11 +1456,12 @@ function downloadResultCard() {
 }
 
 function beginEndlessMission() {
+  const difficulty = Math.floor(state.distance / 900);
   const missions = [
-    { type: 'distance', goal: 320 + Math.floor(random() * 280), title: 'Keep the wheels rolling' },
-    { type: 'coins', goal: 3 + Math.floor(random() * 4), title: 'Pick up some change' },
-    { type: 'deliveries', goal: 2 + Math.floor(random() * 2), title: 'Carry passengers safe' },
-    { type: 'street', goal: 24 + Math.floor(random() * 17), title: 'Cruise Wellington Bassey Way', street: 'Wellington Bassey Way' },
+    { type: 'distance', goal: 320 + Math.floor(random() * 280) + difficulty * 80, title: 'Keep the wheels rolling' },
+    { type: 'coins', goal: 3 + Math.floor(random() * 4) + difficulty, title: 'Pick up some change' },
+    { type: 'deliveries', goal: 2 + Math.floor(random() * 2) + Math.floor(difficulty / 2), title: 'Carry passengers safe' },
+    { type: 'street', goal: 24 + Math.floor(random() * 17) + difficulty * 5, title: 'Cruise Wellington Bassey Way', street: 'Wellington Bassey Way' },
   ];
   state.endlessMission = missions[Math.floor(random() * missions.length)];
   state.endlessMission.startDistance = state.distance;
@@ -1183,7 +1471,7 @@ function beginEndlessMission() {
   ui.mission.textContent = state.endlessMission.title;
   ui.progress.style.width = '0%';
   ui.detail.textContent = '0%';
-  showToast('Daily runs complete! New street mission unlocked.');
+  showToast('Daily mission done! Endless road mission unlocked.');
 }
 
 function updateEndlessMission(delta) {
@@ -1229,6 +1517,7 @@ function changeLane(direction) {
 function endRun(reason = null) {
   if (!state.active) return;
   state.active = false;
+  saveDailyMission();
   gameElement.classList.remove('is-playing');
   if (state.impactTime <= 0) triggerImpact();
   if (soundEnabled) playCrash();
@@ -1349,6 +1638,7 @@ function resetRun() {
   ui.refuelLabel.textContent = 'BUY 1L · ₦500';
   state.deliveries = 0;
   state.endlessMission = null;
+  state.nextTrafficSpawnDistance = 450;
   if (engineGain && soundEnabled) engineGain.gain.setTargetAtTime(0.035, audioContext.currentTime, 0.08);
   player.position.set(roadCurve(3.4), 0, 3.4);
   player.rotation.set(0, 0, 0);
@@ -1385,10 +1675,9 @@ function resetRun() {
   ui.crash.hidden = true;
   state.streetIndex = state.startStreetIndex;
   ui.street.textContent = streets[state.streetIndex];
-  ui.mission.textContent = 'Reach Ibom Plaza';
-  ui.progress.style.width = '0%';
-  ui.detail.textContent = '0 / 400 m';
-  ui.passengerTitle.textContent = 'No passenger';
+  refreshDailyMission();
+  renderDailyMission();
+  ui.passengerTitle.textContent = 'PICKUP';
   ui.passengerDetail.textContent = 'Look out for a pickup';
   ui.passengers.textContent = '0';
   ui.landmark.classList.remove('visible');
@@ -1434,6 +1723,50 @@ ui.closeHowTo.addEventListener('click', closeHowTo);
 ui.howToScreen.addEventListener('click', (event) => {
   if (event.target === ui.howToScreen) closeHowTo();
 });
+ui.musicOpen.addEventListener('click', openMusicPlayer);
+ui.musicClose.addEventListener('click', closeMusicPlayer);
+ui.musicScreen.addEventListener('click', (event) => {
+  if (event.target === ui.musicScreen) closeMusicPlayer();
+});
+ui.musicPlay.addEventListener('click', () => {
+  if (ui.musicAudio.paused) {
+    if (musicTrackIndex < 0 && musicTracks.length) void playMusicTrack(0);
+    else ui.musicAudio.play().catch(() => { ui.musicStatus.textContent = 'TAP PLAY TO START'; });
+  } else {
+    ui.musicAudio.pause();
+  }
+});
+ui.musicPrevious.addEventListener('click', playPreviousMusicTrack);
+ui.musicNext.addEventListener('click', playNextMusicTrack);
+ui.musicAdd.addEventListener('click', () => ui.musicFilePicker.click());
+ui.musicFilePicker.addEventListener('change', (event) => addLocalMusicFiles(event.currentTarget.files));
+ui.musicVolume.addEventListener('input', (event) => {
+  ui.musicAudio.volume = Number(event.currentTarget.value);
+});
+ui.musicProgress.addEventListener('input', (event) => {
+  if (Number.isFinite(ui.musicAudio.duration)) {
+    ui.musicAudio.currentTime = Number(event.currentTarget.value) / 100 * ui.musicAudio.duration;
+  }
+});
+ui.musicAudio.volume = Number(ui.musicVolume.value);
+ui.musicAudio.addEventListener('play', updateMusicPlaybackState);
+ui.musicAudio.addEventListener('pause', updateMusicPlaybackState);
+ui.musicAudio.addEventListener('ended', playNextMusicTrack);
+ui.musicAudio.addEventListener('loadedmetadata', () => {
+  ui.musicProgress.disabled = !Number.isFinite(ui.musicAudio.duration);
+  ui.musicDuration.textContent = formatMusicTime(ui.musicAudio.duration);
+});
+ui.musicAudio.addEventListener('timeupdate', () => {
+  const duration = ui.musicAudio.duration;
+  ui.musicCurrentTime.textContent = formatMusicTime(ui.musicAudio.currentTime);
+  ui.musicDuration.textContent = formatMusicTime(duration);
+  if (Number.isFinite(duration) && duration > 0) {
+    ui.musicProgress.value = String(ui.musicAudio.currentTime / duration * 100);
+  }
+});
+ui.musicAudio.addEventListener('error', () => {
+  if (musicTrackIndex >= 0) ui.musicStatus.textContent = 'TRACK COULD NOT BE PLAYED';
+});
 ui.openLeaderboard.addEventListener('click', openLeaderboard);
 ui.closeLeaderboard.addEventListener('click', closeLeaderboard);
 ui.leaderboardScreen.addEventListener('click', (event) => {
@@ -1451,6 +1784,7 @@ ui.leaderboardTabs.addEventListener('click', (event) => {
 window.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !ui.leaderboardScreen.hidden) closeLeaderboard();
   if (event.key === 'Escape' && !ui.howToScreen.hidden) closeHowTo();
+  if (event.key === 'Escape' && !ui.musicScreen.hidden) closeMusicPlayer();
 });
 ui.reviveButton.addEventListener('click', reviveRun);
 ui.resultsLeaderboard.addEventListener('click', openLeaderboard);
@@ -1532,6 +1866,7 @@ document.querySelector('#sound-toggle').addEventListener('click', (event) => {
 
 const keysDown = new Set();
 window.addEventListener('keydown', (event) => {
+  if (!ui.musicScreen.hidden) return;
   if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '].includes(event.key)) event.preventDefault();
   if (event.repeat) return;
   if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') changeLane(-1);
@@ -1599,6 +1934,7 @@ function animate(now) {
   requestAnimationFrame(animate);
   const delta = Math.min((now - previousTime) / 1000, 0.05);
   previousTime = now;
+  refreshDailyMission();
   if (!state.active) {
     animateHomeScene(delta, now);
   } else {
@@ -1613,7 +1949,8 @@ function animate(now) {
     for (const signal of trafficSignals) {
       for (const [name, material] of Object.entries(signal)) material.emissiveIntensity = name === activeSignal ? 1.5 : 0.04;
     }
-    const cruisingSpeed = Math.min(78, 48 + Math.floor(state.distance / 300) * 5);
+    const difficultyLevel = Math.floor(state.distance / 350);
+    const cruisingSpeed = Math.min(92, 48 + difficultyLevel * 6);
     const targetSpeed = state.fuel <= 0 || state.braking ? 0 : state.boosting ? Math.min(120, cruisingSpeed + 42) : cruisingSpeed;
     state.speed = THREE.MathUtils.damp(state.speed, targetSpeed, 2.8, delta);
     if (state.fuel <= 0 && state.speed < 1 && state.fuelStopped > 2) endRun('Fuel empty. The keke coasted to a stop in the middle of Uyo.');
@@ -1623,6 +1960,12 @@ function animate(now) {
     const flow = state.speed / 48;
     const forward = 12.2 * flow * delta;
     state.distance += forward;
+    addDailyMissionProgress('distance', forward);
+    if (state.distance >= state.nextTrafficSpawnDistance && traffic.length < 18) {
+      spawnTraffic(-120 - random() * 80);
+      state.nextTrafficSpawnDistance += 450;
+      showToast('Traffic don increase. Keep your eyes on the road!');
+    }
     state.score += forward * 1.35;
     state.lanePosition = THREE.MathUtils.damp(state.lanePosition, lanes[state.lane], 10, delta);
     player.position.x = roadCurve(player.position.z) + state.lanePosition;
@@ -1703,7 +2046,7 @@ function animate(now) {
         item.mesh.position.z = -105 - random() * 165;
         item.lanePosition = roadCurve(item.mesh.position.z) + lanes[item.lane];
         item.mesh.position.x = item.lanePosition;
-        item.speed = 2 + random() * 2.4 + Math.min(4, state.distance / 450);
+        item.speed = 2 + random() * 2.4 + Math.min(7, state.distance / 300);
       }
     }
 
@@ -1767,6 +2110,7 @@ function animate(now) {
         if (item.kind === 'coin') {
           state.coins += 1;
           state.runCoinsEarned += 1;
+          addDailyMissionProgress('coins', 1);
           state.score += coinPointValue;
           saveWallet();
           if (soundEnabled) playChime();
@@ -1791,28 +2135,7 @@ function animate(now) {
       ui.street.textContent = streets[streetIndex];
       showToast(`Now riding on ${streets[streetIndex]}`);
     }
-    if (state.distance >= 400 && state.missionStage === 0) {
-      state.missionStage = 1;
-      ui.mission.textContent = 'Survive Ikot Ekpene Road';
-      showToast('Ibom Plaza reached! Next: survive Ikot Ekpene Road.');
-    }
-    if (state.missionStage === 0) {
-      ui.progress.style.width = `${Math.min(100, state.distance / 400 * 100)}%`;
-      ui.detail.textContent = `${Math.min(400, Math.floor(state.distance))} / 400 m`;
-    } else if (state.missionStage === 1) {
-      if (streetIndex === 1) state.roadTime += delta;
-      ui.progress.style.width = `${Math.min(100, state.roadTime / 60 * 100)}%`;
-      ui.detail.textContent = `${Math.min(60, Math.floor(state.roadTime))} / 60 sec · Ikot Ekpene`;
-      if (state.roadTime >= 60) {
-        state.missionStage = 2;
-        state.score += 300;
-        ui.mission.textContent = 'Uyo road legend';
-        ui.detail.textContent = 'Daily missions complete';
-        ui.progress.style.width = '100%';
-        showToast('Uyo road legend! Mission complete +300');
-      }
-    }
-    if (state.missionStage >= 2) {
+    if (state.dailyMission.completed) {
       if (!state.endlessMission) beginEndlessMission();
       updateEndlessMission(delta);
     }
@@ -1826,7 +2149,7 @@ function animate(now) {
     ui.coins.textContent = String(state.coins * coinPointValue);
     ui.hornStatus.textContent = state.hornCooldown > 0 ? `${state.hornCooldown.toFixed(1)}s` : 'READY';
     ui.passengers.textContent = String(state.passengers);
-    ui.passengerTitle.textContent = state.passengers ? 'Passenger onboard' : 'No passenger';
+    ui.passengerTitle.textContent = state.passengers ? 'ONBOARD' : 'PICKUP';
     ui.passengerDetail.textContent = state.passengers ? `${Math.max(0, Math.ceil(state.dropDistance - state.distance))} m to drop-off` : 'Look out for a pickup';
     ui.passengerAction.hidden = !state.passengers && !state.passengerPickup;
     ui.passengerAction.textContent = state.passengers ? 'DROP OFF' : 'PICK UP';
