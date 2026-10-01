@@ -1854,10 +1854,7 @@ function triggerHorn() {
   }
   state.hornCooldown = 2.6;
   state.score += 12;
-  if (soundEnabled) {
-    playTone(520, 0.14, 'square', 0.08);
-    playTone(660, 0.2, 'square', 0.08, 0.08);
-  }
+  if (soundEnabled) playCarHorn();
   showToast('Horn blast! Road clear.');
 }
 document.querySelector('#sound-toggle').addEventListener('click', (event) => {
@@ -2215,6 +2212,35 @@ function playTone(frequency, duration, type = 'sine', volume = 0.05, delay = 0) 
   gain.connect(masterGain);
   oscillator.start();
   oscillator.stop(start + duration + 0.02);
+}
+
+function playCarHorn() {
+  if (!soundEnabled || !audioContext || !masterGain) return;
+  const now = audioContext.currentTime;
+  const filter = audioContext.createBiquadFilter();
+  const envelope = audioContext.createGain();
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(1550, now);
+  filter.Q.setValueAtTime(0.8, now);
+  envelope.gain.setValueAtTime(0.0001, now);
+  envelope.gain.exponentialRampToValueAtTime(0.28, now + 0.018);
+  envelope.gain.setValueAtTime(0.28, now + 0.26);
+  envelope.gain.exponentialRampToValueAtTime(0.0001, now + 0.43);
+  filter.connect(envelope);
+  envelope.connect(masterGain);
+
+  for (const [frequency, level] of [[370, 0.12], [466, 0.1]]) {
+    const oscillator = audioContext.createOscillator();
+    const voiceGain = audioContext.createGain();
+    oscillator.type = 'sawtooth';
+    oscillator.frequency.setValueAtTime(frequency, now);
+    oscillator.frequency.exponentialRampToValueAtTime(frequency * 0.985, now + 0.43);
+    voiceGain.gain.setValueAtTime(level, now);
+    oscillator.connect(voiceGain);
+    voiceGain.connect(filter);
+    oscillator.start(now);
+    oscillator.stop(now + 0.45);
+  }
 }
 
 function playMusicStep() {
