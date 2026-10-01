@@ -140,6 +140,9 @@ button:focus-visible, a:focus-visible { outline: 3px solid #f1ce42; outline-offs
 .start-meta span { color: #c8d9c5; font-size: 8px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
 .start-meta strong { color: #fff4c1; font: 700 20px 'Barlow Condensed',sans-serif; }
 .start-panel #start-button { justify-self: start; min-width: 210px; min-height: 52px; background: #f1ce42; color: #263e2b; font: 900 15px 'DM Sans',sans-serif; letter-spacing: 1px; box-shadow: 0 7px 0 #ad7e25; }
+.start-panel .install-app-button { border-color: #f1ce42; color: #fff4c1; }
+.install-help { max-width: 480px; margin: -4px 0 0; padding: 9px 11px; border-left: 2px solid #f1ce42; background: rgba(9,37,26,.5); color: #fff8dc; font-size: 11px; line-height: 1.45; }
+.install-help[hidden] { display: none; }
 .leaderboard-open,.leaderboard-shortcut { display: flex; align-items: center; justify-content: space-between; gap: 20px; justify-self: start; width: min(300px,100%); min-height: 44px; padding: 11px 14px; border: 1px solid #4b8b60; background: #286845; color: #fff8dc; font: 800 11px 'DM Sans',sans-serif; letter-spacing: 1.4px; text-align: left; cursor: pointer; }
 .leaderboard-open span:last-child,.leaderboard-shortcut span:last-child { color: #f1ce42; font-size: 18px; }
 .leaderboard-shortcut { justify-self: center; width: auto; }

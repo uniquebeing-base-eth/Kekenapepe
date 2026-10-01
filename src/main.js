@@ -806,6 +806,7 @@ const ui = {
   hornStatus: document.querySelector('#horn-status'), toast: document.querySelector('#toast'), landmark: document.querySelector('#landmark-label'), crash: document.querySelector('#crash-screen'),
   crashMessage: document.querySelector('#crash-message'), finalScore: document.querySelector('#final-score'), loading: document.querySelector('#loading-screen'),
   startScreen: document.querySelector('#start-screen'), startButton: document.querySelector('#start-button'), reviveButton: document.querySelector('#revive-button'),
+  installButton: document.querySelector('#install-app-button'), installHelp: document.querySelector('#install-help'),
   saveName: document.querySelector('#save-name'), saveScoreButton: document.querySelector('#save-score-button'), shareXButton: document.querySelector('#share-x-button'),
   shareCopyButton: document.querySelector('#share-copy-button'), leaderboard: document.querySelector('#leaderboard-list'),
   impactFlash: document.querySelector('#impact-flash'),
@@ -1716,6 +1717,34 @@ ui.startButton.addEventListener('click', () => {
   if (localStorage.getItem(soundPreferenceKey) !== 'muted' && !soundEnabled) setSoundEnabled(true);
   resetRun();
 });
+let deferredInstallPrompt = null;
+const isInstalledApp = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+ui.installButton.hidden = isInstalledApp();
+window.addEventListener('beforeinstallprompt', (event) => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+});
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  ui.installButton.hidden = true;
+  ui.installHelp.hidden = true;
+});
+ui.installButton.addEventListener('click', async () => {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    if (outcome === 'accepted') ui.installButton.hidden = true;
+    return;
+  }
+
+  const isAppleMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  ui.installHelp.textContent = isAppleMobile
+    ? 'In Safari, tap Share, then choose Add to Home Screen.'
+    : 'Open your browser menu and choose Install app or Add to Home Screen. Installation requires this app to be served from HTTPS.';
+  ui.installHelp.hidden = false;
+});
 ui.saveName.addEventListener('input', (event) => syncProfileName(event.currentTarget.value));
 ui.startStreet.addEventListener('change', renderStreetTabs);
 ui.openHowTo.addEventListener('click', openHowTo);
@@ -1864,6 +1893,7 @@ document.querySelector('#sound-toggle').addEventListener('click', (event) => {
 const keysDown = new Set();
 window.addEventListener('keydown', (event) => {
   if (!ui.musicScreen.hidden) return;
+  if (event.target instanceof Element && event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
   if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '].includes(event.key)) event.preventDefault();
   if (event.repeat) return;
   if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') changeLane(-1);
